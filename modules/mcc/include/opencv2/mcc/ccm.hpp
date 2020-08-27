@@ -1,14 +1,13 @@
 #ifndef __OPENCV_MCC_CCM_HPP__
 #define __OPENCV_MCC_CCM_HPP__
 
-
 #include<iostream>
 #include<cmath>
 #include<string>
 #include<vector>
-#include "linearize.hpp"
-#include "opencv2\opencv.hpp"
-#include "opencv2\core\core.hpp"
+#include "opencv2/ccm/linearize.hpp"
+#include "opencv2/opencv.hpp"
+#include "opencv2/core/core.hpp"
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 
@@ -29,9 +28,10 @@ namespace cv {
         {
         public:
             // detected colors, the referenceand the RGB colorspace for conversion
-            int shape;
+            CCM_TYPE ccm_type;
             cv::Mat src;
             Color dst;
+            int shape;
 
             // linear method
             RGB_Base_& cs;
@@ -55,10 +55,10 @@ namespace cv {
             double error;
             int maxCount;
             double epsilon;
-            ColorCorrectionModel(cv::Mat src, Color dst, RGB_Base_& cs, DISTANCE_TYPE distance,
+            ColorCorrectionModel(cv::Mat src, Color dst, RGB_Base_& cs, CCM_TYPE ccm_type, DISTANCE_TYPE distance,
                 LINEAR_TYPE linear, double gamma, int deg, std::vector<double> saturated_threshold, cv::Mat weights_list,
-                double weights_coeff, INITIAL_METHOD_TYPE initial_method_type, int maxCount, double epsilon, int shape) :
-                src(src), dst(dst), cs(cs), distance(distance), maxCount(maxCount), epsilon(epsilon),shape(shape)
+                double weights_coeff, INITIAL_METHOD_TYPE initial_method_type, int maxCount, double epsilon) :
+                src(src), dst(dst), cs(cs), distance(distance), maxCount(maxCount), epsilon(epsilon),ccm_type(ccm_type)
             {
                 cv::Mat saturate_mask = saturate(src, saturated_threshold[0], saturated_threshold[1]);
                 this->linear = get_linear(gamma, deg, this->src, this->dst, saturate_mask, this->cs, linear);
@@ -124,15 +124,24 @@ namespace cv {
             // make no change for ColorCorrectionModel_3x3 class
             // convert matrix A to [A, 1] in ColorCorrectionModel_4x3 class
             cv::Mat prepare(cv::Mat inp) {
-                if (shape == 9){
-                    return inp; }
-                else {
+                switch (ccm_type)
+                {
+                case cv::ccm::CCM_3x3:
+                    shape = 9;
+                    return inp;
+                case cv::ccm::CCM_4x3:
+                {
+                    shape = 12;
                     cv::Mat arr1 = cv::Mat::ones(inp.size(), CV_64F);
                     cv::Mat arr_out(inp.size(), CV_64FC4);
                     cv::Mat arr_channels[3];
                     split(inp, arr_channels);
                     merge(std::vector<Mat>{ arr_channels[0], arr_channels[1], arr_channels[2], arr1 }, arr_out);
                     return arr_out;
+                }
+                default:
+                    throw std::invalid_argument{ "Wrong distance_type!" };
+                    break;
                 }
             };
 

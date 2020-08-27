@@ -21,7 +21,7 @@ namespace cv {
 			cv::Mat colored;
 			std::map<ColorSpace, Color*> _history;  // todo ȡ��ָ��&����&����ָ��
 
-			Color(cv::Mat colors, const ColorSpace& cs) :colors(colors), cs(cs) {};
+			Color(cv::Mat colors, ColorSpace& cs) :colors(colors), cs(cs) {};
 
 			virtual ~Color() {};
 
@@ -29,7 +29,7 @@ namespace cv {
                The conversion process incorporates linear transformations to speed up.
                method is chromatic adapation method;
                when save if True, get data from self._history first; */
-			Color to(const ColorSpace& other, CAM method = BRADFORD, bool save = true) {
+			Color to(ColorSpace& other, CAM method = BRADFORD, bool save = true) {
 				if (_history.count(other) == 1) {
 
 					return *_history[other];

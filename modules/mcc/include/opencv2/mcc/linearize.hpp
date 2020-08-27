@@ -179,7 +179,7 @@ namespace cv {
         };
 
         /* get linearization method */
-        Linear* get_linear(double gamma, int deg, cv::Mat src, Color dst, cv::Mat mask, RGB_Base_ cs, LINEAR_TYPE lineat_type) // TODO ����ָ��
+        Linear* get_linear(double gamma, int deg, cv::Mat src, Color dst, cv::Mat mask, RGB_Base_ cs, LINEAR_TYPE linear_type) // TODO ����ָ��
         {
             Linear* p = new Linear(); // todo ��ʼ��ΪNULL����nullptr,����ָ��
             switch (linear_type)

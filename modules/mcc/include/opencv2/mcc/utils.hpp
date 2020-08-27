@@ -80,7 +80,7 @@ namespace cv {
             {
                 auto it_src = src.begin<double>(), end_src = src.end<double>();
                 auto it_dst = dst.begin<double>(), end_dst = dst.end<double>();
-                for (; it_src != end_src; ++t_src, ++it_mask) {
+                for (; it_src != end_src; ++it_src, ++it_mask) {
                     if (*it_mask) {
                         (*it_dst) = (*it_src);
                         ++it_dst;

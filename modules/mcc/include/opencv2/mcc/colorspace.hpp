@@ -66,7 +66,7 @@ namespace cv {
                2. Same type, different linear, self is nonlinear; - 2 toL
                3. Same type, different linear, self is linear - 3 fromL*/
 			virtual Operations relation(const ColorSpace& other) {
-				if (linear == other.linear) { return identity; }
+				if (linear == other.linear) { return IDENTITY_OPS; }
 				if (linear) { return Operations({ Operation(fromL) }); }
 				return Operations({ Operation(toL) });
 			};
@@ -100,7 +100,7 @@ namespace cv {
 				XYZb = cv::Mat(xyY2XYZ({ xb, yb }), true);
 				merge(std::vector<cv::Mat>{ XYZr, XYZg, XYZb }, XYZ_rgbl);
 				XYZ_rgbl = XYZ_rgbl.reshape(1, XYZ_rgbl.rows);
-				cv::Mat XYZw = cv::Mat(illuminants[io], true);
+				cv::Mat XYZw = cv::Mat(illuminants.find(io)->second, true);
 				solve(XYZ_rgbl, XYZw, Srgb);
 				merge(std::vector<cv::Mat>{ Srgb.at<double>(0)* XYZr,
 					Srgb.at<double>(1)* XYZg,
@@ -417,8 +417,8 @@ namespace cv {
 				}
 
 				/* function from http ://www.brucelindbloom.com/index.html?ColorCheckerRGB.html */
-				cv::Mat XYZws = cv::Mat(illuminants[dio]);
-				cv::Mat XYZWd = cv::Mat(illuminants[sio]);
+				cv::Mat XYZws = cv::Mat(illuminants.find(dio)->second);
+				cv::Mat XYZWd = cv::Mat(illuminants.find(sio)->second);
 				cv::Mat MA = MAs.at(method)[0];
 				cv::Mat MA_inv = MAs.at(method)[1];
 				cv::Mat M = MA_inv * cv::Mat::diag((MA * XYZws) / (MA * XYZWd)) * MA;
@@ -447,7 +447,7 @@ namespace cv {
 			static constexpr double c = 4. / 29.;
 
 			Vec3d __from(Vec3d xyz) {
-				double x = xyz[0] / illuminants[io][0], y = xyz[1] / illuminants[io][1], z = xyz[2] / illuminants[io][2];
+				double x = xyz[0] / illuminants.find(io)->second[0], y = xyz[1] / illuminants.find(io)->second[1], z = xyz[2] / illuminants.find(io)->second[2];
 				auto f = [this](double t)->double { return t > t0 ? std::cbrtl(t) : (m * t + c); };
 				double fx = f(x), fy = f(y), fz = f(z);
 				return { 116. * fy - 16. ,500 * (fx - fy),200 * (fy - fz) };
@@ -460,7 +460,7 @@ namespace cv {
 			Vec3d __to(Vec3d lab) {
 				auto f_inv = [this](double t)->double {return t > delta ? pow(t, 3.0) : (t - c) / m; };
 				double L = (lab[0] + 16.) / 116., a = lab[1] / 500., b = lab[2] / 200.;
-				return { illuminants[io][0] * f_inv(L + a),illuminants[io][1] * f_inv(L),illuminants[io][2] * f_inv(L - b) };
+				return { illuminants.find(io)->second[0] * f_inv(L + a),illuminants.find(io)->second[1] * f_inv(L),illuminants.find(io)->second[2] * f_inv(L - b) };
 			}
 
 			cv::Mat _to(cv::Mat src) {
@@ -469,8 +469,8 @@ namespace cv {
 
 		};
 
-		const Lab Lab_D65_2(D65_2);
-		const Lab Lab_D50_2(D50_2);
+		Lab Lab_D65_2(D65_2);
+		Lab Lab_D50_2(D50_2);
 
 	}
 }
