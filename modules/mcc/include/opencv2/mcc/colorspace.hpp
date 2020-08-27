@@ -32,7 +32,7 @@ namespace cv {
 				return (type == other.type) && (io == other.io);
 			};
 
-			virtual Operations relation(ColorSpace other) { //todo const &
+			virtual Operations relation(const ColorSpace& other) { 
 				return IDENTITY_OPS;
 			};
 
@@ -65,14 +65,13 @@ namespace cv {
                1. Same type, same linear; - copy
                2. Same type, different linear, self is nonlinear; - 2 toL
                3. Same type, different linear, self is linear - 3 fromL*/
-			virtual Operations relation(ColorSpace other) {
+			virtual Operations relation(const ColorSpace& other) {
 				if (linear == other.linear) { return identity; }
 				if (linear) { return Operations({ Operation(fromL) }); }
 				return Operations({ Operation(toL) });
 			};
 
 			void init() {
-				//_set_base(linear);
 				_set_parameter();
 				_cal_linear();
 				_cal_M();
@@ -116,7 +115,7 @@ namespace cv {
 				toL = [this](cv::Mat rgb)->cv::Mat {return _toL(rgb); };
 
 				/* rgbl -> rgb */
-				fromL = [this](cv::Mat rgbl) {return _fromL(rgbl); };
+				fromL = [this](cv::Mat rgbl)->cv::Mat {return _fromL(rgbl); };
 
 				if (linear) {
 					to = Operations({ Operation(M_to.t()) });
@@ -348,7 +347,7 @@ namespace cv {
 			}
 		};
 
-		// todo ÊÇ·ñÓÐ¸üºÃ³õÊ¼»¯·½Ê½
+		// todo ï¿½Ç·ï¿½ï¿½Ð¸ï¿½ï¿½Ã³ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½Ê½
 		sRGB_ sRGB(false), sRGBL(true);
 		AdobeRGB_ AdobeRGB(false), AdobeRGBL(true);
 		WideGamutRGB_ WideGamutRGB(false), WideGamutRGBL(true);
@@ -374,7 +373,7 @@ namespace cv {
 		};
 
 		_ColorSpaceInitial color_space_initial;
-		// todo ÊÇ·ñÓÐ¸üºÃ³õÊ¼»¯·½Ê½end
+		// todo ï¿½Ç·ï¿½ï¿½Ð¸ï¿½ï¿½Ã³ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½Ê½end
 
 		enum CAM {
 			IDENTITY,
@@ -385,8 +384,8 @@ namespace cv {
 		/* chromatic adaption matrices */
 		class XYZ :public ColorSpace {
 		public:
-			// todo ÓÃconstºÍstaticÐÞÊÎ±äÁ¿
-			std::map <std::tuple<IO, IO, CAM>, cv::Mat > CAMs;// todo ¼Óstatic 
+			// todo ï¿½ï¿½constï¿½ï¿½staticï¿½ï¿½ï¿½Î±ï¿½ï¿½ï¿½
+			std::map <std::tuple<IO, IO, CAM>, cv::Mat > CAMs;// todo ï¿½ï¿½static 
 			//static constexpr cv::Mat Von_Kries;
 			//const static cv::Mat Bradford;
 			//const static std::map <CAM, std::vector< cv::Mat >> MAs;
@@ -408,7 +407,7 @@ namespace cv {
 		private:
 			/* get cam */
 
-			//todo ¾²Ì¬³ÉÔ±º¯Êý£¬¼Óstatic
+			//todo ï¿½ï¿½Ì¬ï¿½ï¿½Ô±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½static
 			cv::Mat _cam(IO sio, IO dio, CAM method = BRADFORD) {
 				if (sio == dio) {
 					return cv::Mat::eye(cv::Size(3, 3), CV_64FC1);
@@ -431,15 +430,14 @@ namespace cv {
 
 		};
 
-		// todo ¼Óconst
-		XYZ XYZ_D65_2(D65_2);
-		XYZ XYZ_D50_2(D50_2);
+		const XYZ XYZ_D65_2(D65_2);
+		const XYZ XYZ_D50_2(D50_2);
 
 		class Lab :public ColorSpace {
 		public:
 			Lab(IO io) : ColorSpace(io, "XYZ", true) {
-				to = { Operation([this](cv::Mat src) {return _to(src); }) };
-				from = { Operation([this](cv::Mat src) {return _from(src); }) };
+				to = { Operation([this](cv::Mat src)->cv::Mat {return _to(src); }) };
+				from = { Operation([this](cv::Mat src)->cv::Mat {return _from(src); }) };
 			}
 
 		private:
@@ -450,7 +448,7 @@ namespace cv {
 
 			Vec3d __from(Vec3d xyz) {
 				double x = xyz[0] / illuminants[io][0], y = xyz[1] / illuminants[io][1], z = xyz[2] / illuminants[io][2];
-				auto f = [this](double t) { return t > t0 ? std::cbrtl(t) : (m * t + c); };
+				auto f = [this](double t)->double { return t > t0 ? std::cbrtl(t) : (m * t + c); };
 				double fx = f(x), fy = f(y), fz = f(z);
 				return { 116. * fy - 16. ,500 * (fx - fy),200 * (fy - fz) };
 			}
@@ -460,7 +458,7 @@ namespace cv {
 			}
 
 			Vec3d __to(Vec3d lab) {
-				auto f_inv = [this](double t) {return t > delta ? pow(t, 3.0) : (t - c) / m; };
+				auto f_inv = [this](double t)->double {return t > delta ? pow(t, 3.0) : (t - c) / m; };
 				double L = (lab[0] + 16.) / 116., a = lab[1] / 500., b = lab[2] / 200.;
 				return { illuminants[io][0] * f_inv(L + a),illuminants[io][1] * f_inv(L),illuminants[io][2] * f_inv(L - b) };
 			}
@@ -471,9 +469,8 @@ namespace cv {
 
 		};
 
-		// todo ¼Óconst
-		Lab Lab_D65_2(D65_2);
-		Lab Lab_D50_2(D50_2);
+		const Lab Lab_D65_2(D65_2);
+		const Lab Lab_D50_2(D50_2);
 
 	}
 }

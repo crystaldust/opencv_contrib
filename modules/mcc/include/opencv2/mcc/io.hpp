@@ -18,7 +18,7 @@ namespace cv {
 
 			IO() {};
 
-			IO(std::string illuminant, std::string observer) :illuminant(illuminant), observer(observer) {}; //todo ±äÁ¿ÃûºÍ²ÎÊıÃû²»ÄÜÖØ¸´
+			IO(std::string illuminant, std::string observer) :illuminant(illuminant), observer(observer) {}; //todo ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø¸ï¿½
 
 			virtual ~IO() {};
 
@@ -55,14 +55,14 @@ namespace cv {
 
 		std::map <IO, std::vector<double>> get_illuminant() {
 			std::map <IO, std::vector<double> >  illuminants;
-			for (auto it = illuminants_xy.begin(); it != illuminants_xy.end(); it++)
+			for (auto it = illuminants_xy.begin(); it != illuminants_xy.end(); ++it)
 			{
 				illuminants[it->first] = xyY2XYZ(it->second);
 			}
 			return illuminants;
 		}
 
-		std::map<IO, std::vector<double> >  illuminants = get_illuminant(); //todo const
+		const std::map<IO, std::vector<double> >  illuminants = get_illuminant(); 
 	}
 }
 

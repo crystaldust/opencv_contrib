@@ -19,7 +19,7 @@ namespace cv {
 			ColorSpace& cs;
 			cv::Mat grays;
 			cv::Mat colored;
-			std::map<ColorSpace, Color*> _history;  // todo È¡ÏûÖ¸Õë&ÒýÓÃ&ÖÇÄÜÖ¸Õë
+			std::map<ColorSpace, Color*> _history;  // todo È¡ï¿½ï¿½Ö¸ï¿½ï¿½&ï¿½ï¿½ï¿½ï¿½&ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½
 
 			Color(cv::Mat colors, const ColorSpace& cs) :colors(colors), cs(cs) {};
 
@@ -39,7 +39,7 @@ namespace cv {
 				}
 				Operations ops;
 				ops.add(cs.to).add(XYZ(cs.io).cam(other.io, method)).add(other.from);
-				Color* color = new Color(ops.run(colors), other);// todo ¸Ä³ÉÖÇÄÜÖ¸Õë
+				Color* color = new Color(ops.run(colors), other);// todo ï¿½Ä³ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½
 				if (save) {
 					_history[other] = color;
 				}
@@ -53,12 +53,12 @@ namespace cv {
 			}
 
 			cv::Mat toGray(IO io, CAM method = BRADFORD, bool save = true) {
-				XYZ xyz(io); // todo ÔÚcolorspaceÀï´´½¨map±£´æxyzºÍlab£¬²»ÖØ¸´´´½¨colorspace
+				XYZ xyz(io); // todo ï¿½ï¿½colorspaceï¿½ï´´ï¿½ï¿½mapï¿½ï¿½ï¿½ï¿½xyzï¿½ï¿½labï¿½ï¿½ï¿½ï¿½ï¿½Ø¸ï¿½ï¿½ï¿½ï¿½ï¿½colorspace
 				return channel(this->to(xyz, method, save).colors, 1);
 			}
 
 			cv::Mat toLuminant(IO io, CAM method = BRADFORD, bool save = true) {
-				Lab lab(io);// todo ÔÚcolorspaceÀï´´½¨map±£´æxyzºÍlab£¬²»ÖØ¸´´´½¨colorspace
+				Lab lab(io);// todo ï¿½ï¿½colorspaceï¿½ï´´ï¿½ï¿½mapï¿½ï¿½ï¿½ï¿½xyzï¿½ï¿½labï¿½ï¿½ï¿½ï¿½ï¿½Ø¸ï¿½ï¿½ï¿½ï¿½ï¿½colorspace
 				return channel(this->to(lab, method, save).colors, 0);
 			}
 
@@ -69,7 +69,7 @@ namespace cv {
 
 			/* return distance between self and other */
 			cv::Mat diff(Color& other, IO io, DISTANCE_TYPE method = CIE2000) {
-				Lab lab(io);// todo ÔÚcolorspaceÀï´´½¨map±£´æxyzºÍlab£¬²»ÖØ¸´´´½¨colorspace
+				Lab lab(io);// todo ï¿½ï¿½colorspaceï¿½ï´´ï¿½ï¿½mapï¿½ï¿½ï¿½ï¿½xyzï¿½ï¿½labï¿½ï¿½ï¿½ï¿½ï¿½Ø¸ï¿½ï¿½ï¿½ï¿½ï¿½colorspace
 				switch (method)
 				{
 				case cv::ccm::CIE76:
@@ -79,15 +79,12 @@ namespace cv {
 				case cv::ccm::CMC_1TO1:
 				case cv::ccm::CMC_2TO1:
 					return distance(to(lab).colors, other.to(lab).colors, method);
-					break;
 				case cv::ccm::RGB:
 					return distance(to(*cs.nl).colors, other.to(*cs.nl).colors, method);
-					break;
 				case cv::ccm::RGBL:
 					return distance(to(*cs.l).colors, other.to(*cs.l).colors, method);
-					break;
 				default:
-					throw; // todo 
+					throw std::invalid_argument { "Wrong method!" };
 					break;
 				}
 			}

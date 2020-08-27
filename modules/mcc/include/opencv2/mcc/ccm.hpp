@@ -1,23 +1,20 @@
-#ifndef ColorCorrectionModel_H
-#define ColorCorrectionModel_H
+#ifndef __OPENCV_MCC_CCM_HPP__
+#define __OPENCV_MCC_CCM_HPP__
 
 
 #include<iostream>
 #include<cmath>
 #include<string>
 #include<vector>
-#include "utils.h"
-#include "distance.h"
-#include "linearize.h"
-#include "colorspace.h"
+#include "linearize.hpp"
 #include "opencv2\opencv.hpp"
 #include "opencv2\core\core.hpp"
-#include "color.h"
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 
 namespace cv {
     namespace ccm {
+
         enum CCM_TYPE {
             CCM_3x3,
             CCM_4x3
@@ -68,7 +65,6 @@ namespace cv {
                 _cal_weights_masks(weights_list, weights_coeff, saturate_mask);
 
                 src_rgbl = this->linear->linearize(mask_copyto(this->src, mask));
-                // this->dst = this->dst[mask];
                 this->dst = this->dst[mask];
                 dst_rgbl = mask_copyto(this->dst.to(*(this->cs.l)).colors, mask);
 
@@ -130,20 +126,13 @@ namespace cv {
             cv::Mat prepare(cv::Mat inp) {
                 if (shape == 9){
                     return inp; }
-                else if (shape == 12) {
+                else {
                     cv::Mat arr1 = cv::Mat::ones(inp.size(), CV_64F);
                     cv::Mat arr_out(inp.size(), CV_64FC4);
                     cv::Mat arr_channels[3];
                     split(inp, arr_channels);
-                    /*std::vector<cv::Mat> arrout_channel;
-                    arrout_channel.push_back(arr_channels[0]);
-                    arrout_channel.push_back(arr_channels[1]);
-                    arrout_channel.push_back(arr_channels[2]);
-                    arrout_channel.push_back(arr1);
-                    merge(arrout_channel, arr_out);*/
                     merge(std::vector<Mat>{ arr_channels[0], arr_channels[1], arr_channels[2], arr1 }, arr_out);
                     return arr_out;
-
                 }
             };
 
@@ -183,7 +172,6 @@ namespace cv {
                 }
 
                 solve(A.reshape(1, A.rows), B.reshape(1, B.rows), ccm0, DECOMP_SVD);
-                //std::cout << "ccm0   " << ccm0 << std::endl;
                 if (fit) {
                     ccm = ccm0;
                     cv::Mat residual = A.reshape(1, A.rows) * ccm.reshape(0, shape / 3) - B.reshape(1, B.rows);
@@ -200,9 +188,9 @@ namespace cv {
                 LossFunction(ColorCorrectionModel* ccm) : ccm_loss(ccm) {};
 
                 int getDims() const {
-                    //std::cout << "ccm_loss->shape" << ccm_loss->shape << std::endl;
                     return ccm_loss->shape;
                 }
+
                 double calc(const double* x) const {
                     cv::Mat ccm(ccm_loss->shape, 1, CV_64F);
                     for (int i = 0; i < ccm_loss->shape; i++) {
@@ -211,8 +199,6 @@ namespace cv {
                     ccm = ccm.reshape(0, ccm_loss->shape / 3);
                     Mat reshapecolor = ccm_loss->src_rgbl.reshape(1, 0) * ccm;
                     cv::Mat dist = Color(reshapecolor.reshape(3, 0), ccm_loss->cs).diff(ccm_loss->dst, ccm_loss->distance);
-                    //  cv::Mat dist = Color(ccm_loss->src_rgbl * ccm, ccm_loss->cs).diff(ccm_loss->dst, ccm_loss->distance);
-
                     cv::Mat dist_;
                     pow(dist, 2, dist_);
                     if (!ccm_loss->weights.empty()) {
@@ -236,21 +222,20 @@ namespace cv {
                 double res = solver->minimize(reshapeccm);
                 ccm = reshapeccm.reshape(0, shape);
                 double error = pow((res / masked_len), 0.5);
-                std::cout << " ccm " << ccm << std::endl;
-                std::cout << " error " << error << std::endl;
+                //std::cout << " ccm " << ccm << std::endl;
+                //std::cout << " error " << error << std::endl;
             };
 
-            cv::Mat infer(cv::Mat img, bool L = false) {
+            cv::Mat infer(cv::Mat img, bool isLinear = false) {
                 if (!ccm.data)
                 {
                     throw "No CCM values!";
                 }
-                L = false;
                 cv::Mat img_lin = linear->linearize(img);
                 cv::Mat img_ccm(img_lin.size(), img_lin.type());
                 cv::Mat ccm_ = ccm.reshape(0, shape / 3);
                 img_ccm = multiple(prepare(img_lin), ccm_);
-                if (L == true) {
+                if (isLinear == true) {
                     return img_ccm;
                 }
                 return cs.fromL(img_ccm);
@@ -258,66 +243,26 @@ namespace cv {
 
             // infer image and output as an BGR image with uint8 type
             // mainly for test or debug!
-            cv::Mat infer_image(std::string imgfile, bool L = false, int inp_size = 255, int out_size = 255) {
+            cv::Mat infer_image(std::string imgfile, bool isLinear = false) {
+                int inp_size = 255;
+                int out_size = 255;
                 cv::Mat img = imread(imgfile);
                 cv::Mat img_;
                 cvtColor(img, img_, COLOR_BGR2RGB);
                 img_.convertTo(img_, CV_64F);
                 img_ = img_ / inp_size;
-                cv::Mat out = this->infer(img_, L);
+                cv::Mat out = this->infer(img_, isLinear);
                 cv::Mat out_ = out * out_size;
                 out_.convertTo(out_, CV_8UC3);
                 cv::Mat img_out = min(max(out_, 0), out_size);
                 cv::Mat out_img;
                 cvtColor(img_out, out_img, COLOR_RGB2BGR);
                 return out_img;
-            };//
+            };
         };
 
 
-        /*class ColorCorrectionModel_3x3 : public ColorCorrectionModel
-        {
-        public:
-
-            ColorCorrectionModel_3x3(cv::Mat src, Color dst, RGB_Base_& cs, DISTANCE_TYPE distance, LINEAR_TYPE linear,
-                double gamma, int deg, std::vector<double> saturated_threshold, cv::Mat weights_list, double weights_coeff,
-                INITIAL_METHOD_TYPE initial_method_type, int maxCount, double epsilon, int shape) : ColorCorrectionModel(src, dst, cs, distance,
-                    linear, gamma, deg, saturated_threshold, weights_list, weights_coeff, initial_method_type, maxCount, epsilon, 9) {
-            }
-        };
-
-
-        class ColorCorrectionModel_4x3 : public ColorCorrectionModel
-        {
-        public:
-            ColorCorrectionModel_4x3(cv::Mat src, Color dst, RGB_Base_& cs, DISTANCE_TYPE distance, LINEAR_TYPE linear,
-                double gamma, int deg, std::vector<double> saturated_threshold, cv::Mat weights_list, double weights_coeff,
-                INITIAL_METHOD_TYPE initial_method_type, int maxCount, double epsilon, int shape) : ColorCorrectionModel(src, dst, cs, distance,
-                    linear, gamma, deg, saturated_threshold, weights_list, weights_coeff, initial_method_type, maxCount, epsilon, 12) {
-            }
-            
-        };
-
-
-        ColorCorrectionModel* color_correction(CCM_TYPE ccm_type, cv::Mat src, Color dst, RGB_Base_& cs,
-            DISTANCE_TYPE distance, LINEAR_TYPE linear, double gamma, int deg, std::vector<double> saturated_threshold,
-            cv::Mat weights_list, double weights_coeff, INITIAL_METHOD_TYPE initial_method_type, int maxCount, double epsilon, int shape)
-        {
-            ColorCorrectionModel* p;
-            switch (ccm_type)
-            {
-            case cv::ccm::CCM_3x3:
-                p = new ColorCorrectionModel_3x3(src, dst, cs, distance, linear, gamma, deg,
-                    saturated_threshold, weights_list, weights_coeff, initial_method_type, maxCount, epsilon, 9);
-                return p;
-                break;
-            case cv::ccm::CCM_4x3:
-                p = new ColorCorrectionModel_4x3(src, dst, cs, distance, linear, gamma, deg,
-                    saturated_threshold, weights_list, weights_coeff, initial_method_type, maxCount, epsilon, 12);
-                return p;
-                break;
-            }
-        };*/
+      
     }
 }
 #endif

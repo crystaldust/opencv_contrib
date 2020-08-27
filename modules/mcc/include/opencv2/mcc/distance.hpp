@@ -165,30 +165,22 @@ namespace cv {
 			{
 			case cv::ccm::CIE76:
 				return _distancewise(src, ref, delta_cie76);
-				break;
 			case cv::ccm::CIE94_GRAPHIC_ARTS:
 				return _distancewise(src, ref, delta_cie94_graphic_arts);
-				break;
 			case cv::ccm::CIE94_TEXTILES:
 				return _distancewise(src, ref, delta_cie94_textiles);
-				break;
 			case cv::ccm::CIE2000:
 				return _distancewise(src, ref, delta_ciede2000);
-				break;
 			case cv::ccm::CMC_1TO1:
 				return _distancewise(src, ref, delta_cmc_1to1);
-				break;
 			case cv::ccm::CMC_2TO1:
 				return _distancewise(src, ref, delta_cmc_2to1);
-				break;
 			case cv::ccm::RGB:
 				return _distancewise(src, ref, delta_cie76);
-				break;
 			case cv::ccm::RGBL:
 				return _distancewise(src, ref, delta_cie76);
-				break;
 			default:
-				throw;//todo
+				throw std::invalid_argument { "Wrong distance_type!" };
 				break;
 			}
 		};

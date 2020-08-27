@@ -46,7 +46,7 @@ namespace cv {
         private:
             double _from_ew(double x) {
                 double res = 0;
-                for (int d = 0; d <= deg; d++) {
+                for (int d = 0; d <= deg; ++d) {
                     res += pow(x, d) * p.at<double>(d, 0);
                 }
                 return res;
@@ -173,19 +173,16 @@ namespace cv {
                 split(inp, channels);
                 std::vector<cv::Mat> channel;
                 cv::Mat res;
-                channel.push_back(pr(channels[0]));
-                channel.push_back(pg(channels[1]));
-                channel.push_back(pb(channels[2]));
-                merge(channel, res);// todo mergeºÏ²¢
+                merge(std::vector<cv::Mat>{ pr(channels[0]), pr(channels[1]), pr(channels[2]) }, res);
                 return res;
             };
         };
 
         /* get linearization method */
-        Linear* get_linear(double gamma, int deg, cv::Mat src, Color dst, cv::Mat mask, RGB_Base_ cs, LINEAR_TYPE lineat_type) // TODO ÖÇÄÜÖ¸Õë
+        Linear* get_linear(double gamma, int deg, cv::Mat src, Color dst, cv::Mat mask, RGB_Base_ cs, LINEAR_TYPE lineat_type) // TODO ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½
         {
-            Linear* p = new Linear(); // todo ³õÊ¼»¯ÎªNULL»òÕßnullptr,ÖÇÄÜÖ¸Õë
-            switch (lineat_type)
+            Linear* p = new Linear(); // todo ï¿½ï¿½Ê¼ï¿½ï¿½ÎªNULLï¿½ï¿½ï¿½ï¿½nullptr,ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½
+            switch (linear_type)
             {
             case cv::ccm::IDENTITY_:
                 p = new Linear_identity();
@@ -206,7 +203,7 @@ namespace cv {
                 p = new Linear_gray<LogPolyfit>(deg, src, dst, mask, cs);
                 break;
             default:
-                throw; // todo 
+                throw std::invalid_argument { "Wrong linear_type!" };
                 break;
             }
             return p;

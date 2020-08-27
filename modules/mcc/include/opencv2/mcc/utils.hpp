@@ -33,7 +33,7 @@ namespace cv {
                 break;
             }
             default:
-                throw;//todo
+                throw std::invalid_argument { "Wrong channel!" };
                 break;
             }
             return dst;
@@ -80,7 +80,7 @@ namespace cv {
             {
                 auto it_src = src.begin<double>(), end_src = src.end<double>();
                 auto it_dst = dst.begin<double>(), end_dst = dst.end<double>();
-                for (; it_src != end_src; it_src++, it_mask++) {
+                for (; it_src != end_src; ++t_src, ++it_mask) {
                     if (*it_mask) {
                         (*it_dst) = (*it_src);
                         ++it_dst;
@@ -92,15 +92,18 @@ namespace cv {
             {
                 auto it_src = src.begin<Vec3d>(), end_src = src.end<Vec3d>();
                 auto it_dst = dst.begin<Vec3d>(), end_dst = dst.end<Vec3d>();
-                for (; it_src != end_src; it_src++, it_mask++) {
+                for (; it_src != end_src; ++it_src, ++it_mask) {
                     if (*it_mask) {
                         (*it_dst) = (*it_src);
                         ++it_dst;
                     }
                 }
+                break;
             }
+            default:
+                throw std::invalid_argument { "Wrong channel!" };
+                break;
             }
-            //todo
             return dst;
         }
 
