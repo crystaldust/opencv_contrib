@@ -470,17 +470,21 @@ enum CAM
 	BRADFORD
 };
 
-
+//todo 变量放在类内
+static std::map <std::tuple<IO, IO, CAM>, cv::Mat > cams;
+const static cv::Mat Von_Kries = (cv::Mat_<double>(3, 3) << 0.40024, 0.7076, -0.08081, -0.2263, 1.16532, 0.0457, 0., 0., 0.91822);
+const static cv::Mat Bradford = (cv::Mat_<double>(3, 3) << 0.8951, 0.2664, -0.1614, -0.7502, 1.7135, 0.0367, 0.0389, -0.0685, 1.0296);
+const static std::map <CAM, std::vector< cv::Mat >> MAs = {
+	{IDENTITY , { cv::Mat::eye(cv::Size(3,3),CV_64FC1) , cv::Mat::eye(cv::Size(3,3),CV_64FC1)} },
+	{VON_KRIES, { Von_Kries ,Von_Kries.inv() }},
+	{BRADFORD, { Bradford ,Bradford.inv() }}
+};
 
 /* chromatic adaption matrices */
 class XYZ :public ColorSpace 
 {
 public:
 	XYZ(IO io) : ColorSpace(io, "XYZ", true) {};
-	static std::map <std::tuple<IO, IO, CAM>, cv::Mat > cams;
-    const static cv::Mat Von_Kries;
-	const static cv::Mat Bradford;
-	const static std::map <CAM, std::vector< cv::Mat >> MAs;
 	Operations cam(IO dio, CAM method = BRADFORD) 
 	{
 		return (io == dio) ? Operations() : Operations({ Operation(cam_(io, dio, method).t()) });
@@ -511,14 +515,6 @@ private:
 		return M;
 	}
 
-};
-
-XYZ::Von_Kries = (cv::Mat_<double>(3, 3) << 0.40024, 0.7076, -0.08081, -0.2263, 1.16532, 0.0457, 0., 0., 0.91822);
-XYZ::Bradford = (cv::Mat_<double>(3, 3) << 0.8951, 0.2664, -0.1614, -0.7502, 1.7135, 0.0367, 0.0389, -0.0685, 1.0296);
-XYZ::MAs = {
-	{IDENTITY , { cv::Mat::eye(cv::Size(3,3),CV_64FC1) , cv::Mat::eye(cv::Size(3,3),CV_64FC1)} },
-	{VON_KRIES, { Von_Kries ,Von_Kries.inv() }},
-	{BRADFORD, { Bradford ,Bradford.inv() }}
 };
 
 const XYZ XYZ_D65_2(D65_2);
