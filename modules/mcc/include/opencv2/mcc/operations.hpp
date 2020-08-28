@@ -3,7 +3,7 @@
 
 #include <functional>
 #include <vector>
-#include "opencv2/ccm/utils.hpp"
+#include "opencv2/mcc/utils.hpp"
 
 namespace cv {
 	namespace ccm {

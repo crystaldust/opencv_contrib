@@ -1,7 +1,7 @@
 #ifndef __OPENCV_MCC_LINEARIZE_HPP__
 #define __OPENCV_MCC_LINEARIZE_HPP__
 
-#include "opencv2/ccm/color.hpp"
+#include "opencv2/mcc/color.hpp"
 
 namespace cv {
     namespace ccm {
@@ -27,10 +27,8 @@ namespace cv {
                 int nypoints = d.checkVector(1);
                 cv::Mat_<double> srcX(s), srcY(d);
                 cv::Mat_<double> A = cv::Mat_<double>::ones(npoints, deg + 1);
-                for (int y = 0; y < npoints; ++y)
-                {
-                    for (int x = 1; x < A.cols; ++x)
-                    {
+                for (int y = 0; y < npoints; ++y) {
+                    for (int x = 1; x < A.cols; ++x) {
                         A.at<double>(y, x) = srcX.at<double>(y) * A.at<double>(y, x -1);
                     }
                 }
@@ -39,7 +37,7 @@ namespace cv {
 
             virtual ~Polyfit() {};
            
-            cv::Mat operator()(cv::Mat inp) {
+            cv::Mat operator()(const cv::Mat& inp) {
                 return _elementwise(inp, [this](double a)->double {return _from_ew(a); });
             };
 
@@ -73,7 +71,7 @@ namespace cv {
 
             virtual ~LogPolyfit() {};
 
-            cv::Mat operator()(cv::Mat inp) {
+            cv::Mat operator()(const cv::Mat& inp) {
                 cv::Mat mask_ = inp >= 0;
                 cv::Mat y, y_, res;
                 log(inp, y);
@@ -133,7 +131,7 @@ namespace cv {
             }
 
             // monotonically increase is not guaranteed
-            void calc(cv::Mat src, cv::Mat dst) {
+            void calc(const cv::Mat& src, const cv::Mat& dst) {
                 p = T(src, dst, deg);
             };
 
@@ -158,7 +156,7 @@ namespace cv {
             }
 
             // monotonically increase is not guaranteed
-            void calc(cv::Mat src, cv::Mat dst) {
+            void calc(const cv::Mat& src, const cv::Mat& dst) {
                 cv::Mat sChannels[3];
                 cv::Mat dChannels[3];
                 split(src, sChannels);
@@ -179,31 +177,31 @@ namespace cv {
         };
 
         /* get linearization method */
-        Linear* get_linear(double gamma, int deg, cv::Mat src, Color dst, cv::Mat mask, RGB_Base_ cs, LINEAR_TYPE linear_type) // TODO ����ָ��
+        std::shared_ptr<Linear>  get_linear(double gamma, int deg, cv::Mat src, Color dst, cv::Mat mask, RGB_Base_ cs, LINEAR_TYPE linear_type) 
         {
-            Linear* p = new Linear(); // todo ��ʼ��ΪNULL����nullptr,����ָ��
+            std::shared_ptr<Linear> p = std::make_shared<Linear>();
             switch (linear_type)
             {
             case cv::ccm::IDENTITY_:
-                p = new Linear_identity();
+                p.reset(new Linear_identity());
                 break;
             case cv::ccm::GAMMA:
-                p = new Linear_gamma(gamma);
+                p.reset(new Linear_gamma(gamma));
                 break;
             case cv::ccm::COLORPOLYFIT:
-                p = new Linear_color<Polyfit>(deg, src, dst, mask, cs);
+                p.reset(new Linear_color<Polyfit>(deg, src, dst, mask, cs));
                 break;
             case cv::ccm::COLORLOGPOLYFIT:
-                p = new Linear_color<LogPolyfit>(deg, src, dst, mask, cs);
+                p.reset(new Linear_color<LogPolyfit>(deg, src, dst, mask, cs));
                 break;
             case cv::ccm::GRAYPOLYFIT:
-                p = new Linear_gray<Polyfit>(deg, src, dst, mask, cs);
+                p.reset(new Linear_gray<Polyfit>(deg, src, dst, mask, cs));
                 break;
             case cv::ccm::GRAYLOGPOLYFIT:
-                p = new Linear_gray<LogPolyfit>(deg, src, dst, mask, cs);
+                p.reset(new Linear_gray<LogPolyfit>(deg, src, dst, mask, cs));
                 break;
             default:
-                throw std::invalid_argument { "Wrong linear_type!" };
+                throw std::invalid_argument{ "Wrong linear_type!" };
                 break;
             }
             return p;

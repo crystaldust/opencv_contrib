@@ -5,11 +5,10 @@
 #include<cmath>
 #include<string>
 #include<vector>
-#include "opencv2/ccm/linearize.hpp"
-#include "opencv2/opencv.hpp"
-#include "opencv2/core/core.hpp"
+#include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
+#include "opencv2/mcc/linearize.hpp"
 
 namespace cv {
     namespace ccm {
@@ -28,38 +27,28 @@ namespace cv {
         {
         public:
             // detected colors, the referenceand the RGB colorspace for conversion
-            CCM_TYPE ccm_type;
             cv::Mat src;
             Color dst;
+            CCM_TYPE ccm_type;
             int shape;
 
             // linear method
             RGB_Base_& cs;
-            Linear* linear;
+            std::shared_ptr<Linear> linear;
+            DISTANCE_TYPE distance;
 
             // weights and mask
             cv::Mat weights;
-            cv::Mat mask;
-            int masked_len;
-
-            // RGBl of detected data and the reference
-            cv::Mat src_rgbl;
-            cv::Mat dst_rgbl;
-
-            DISTANCE_TYPE distance;
-
-            cv::Mat dist;
             cv::Mat ccm;
             cv::Mat ccm0;
 
-            double error;
             int maxCount;
             double epsilon;
+
             ColorCorrectionModel(cv::Mat src, Color dst, RGB_Base_& cs, CCM_TYPE ccm_type, DISTANCE_TYPE distance,
                 LINEAR_TYPE linear, double gamma, int deg, std::vector<double> saturated_threshold, cv::Mat weights_list,
                 double weights_coeff, INITIAL_METHOD_TYPE initial_method_type, int maxCount, double epsilon) :
-                src(src), dst(dst), cs(cs), distance(distance), maxCount(maxCount), epsilon(epsilon),ccm_type(ccm_type)
-            {
+                src(src), dst(dst), cs(cs), ccm_type(ccm_type), distance(distance), maxCount(maxCount), epsilon(epsilon) {
                 cv::Mat saturate_mask = saturate(src, saturated_threshold[0], saturated_threshold[1]);
                 this->linear = get_linear(gamma, deg, this->src, this->dst, saturate_mask, this->cs, linear);
                 _cal_weights_masks(weights_list, weights_coeff, saturate_mask);
@@ -68,12 +57,8 @@ namespace cv {
                 this->dst = this->dst[mask];
                 dst_rgbl = mask_copyto(this->dst.to(*(this->cs.l)).colors, mask);
 
-
                 // empty for CCM_3x3, not empty for CCM_4x3
-                
                 src_rgbl = prepare(src_rgbl);
-                
-                
 
                 // distance function may affect the loss function and the fitting function
                 switch (this->distance)
@@ -90,40 +75,19 @@ namespace cv {
                     case cv::ccm::LEAST_SQUARE:
                         initial_least_square();
                         break;
+                    default:
+                        throw std::invalid_argument{ "Wrong initial_methoddistance_type!" };
+                        break;
                     }
-                    // fitting();
+                    break;
                 }
+
                 fitting();
             }
 
-            // calculate weights and mask
-            void _cal_weights_masks(cv::Mat weights_list, double weights_coeff, cv::Mat saturate_mask) {
-                // weights
-                if (!weights_list.empty()) {
-                    weights = weights_list;
-                }
-                else if (weights_coeff != 0) {
-                    pow(dst.toLuminant(dst.cs.io), weights_coeff, weights);
-                }
-
-                // masks
-                cv::Mat weight_mask = cv::Mat::ones(src.rows, 1, CV_8U);
-                if (!weights.empty()) {
-                    weight_mask = weights > 0;
-                }
-                this->mask = (weight_mask) & (saturate_mask);
-
-                // weights' mask
-                if (!weights.empty()) {
-                    cv::Mat weights_masked = mask_copyto(this->weights, this->mask);
-                    weights = weights_masked / mean(weights_masked);
-                }
-                masked_len = sum(mask)[0];
-            };
-
             // make no change for ColorCorrectionModel_3x3 class
             // convert matrix A to [A, 1] in ColorCorrectionModel_4x3 class
-            cv::Mat prepare(cv::Mat inp) {
+            cv::Mat prepare(const cv::Mat& inp) {
                 switch (ccm_type)
                 {
                 case cv::ccm::CCM_3x3:
@@ -140,7 +104,7 @@ namespace cv {
                     return arr_out;
                 }
                 default:
-                    throw std::invalid_argument{ "Wrong distance_type!" };
+                    throw std::invalid_argument{ "Wrong ccm_type!" };
                     break;
                 }
             };
@@ -172,6 +136,7 @@ namespace cv {
                     A = src_rgbl;
                     B = dst_rgbl;
                 }
+
                 else {
                     pow(weights, 0.5, w);
                     cv::Mat w_;
@@ -190,7 +155,7 @@ namespace cv {
                 }
             };
 
-            
+
             class LossFunction : public cv::MinProblemSolver::Function {
             public:
                 ColorCorrectionModel* ccm_loss;
@@ -235,7 +200,7 @@ namespace cv {
                 //std::cout << " error " << error << std::endl;
             };
 
-            cv::Mat infer(cv::Mat img, bool isLinear = false) {
+            cv::Mat infer(const cv::Mat& img, bool isLinear = false) {
                 if (!ccm.data)
                 {
                     throw "No CCM values!";
@@ -253,8 +218,8 @@ namespace cv {
             // infer image and output as an BGR image with uint8 type
             // mainly for test or debug!
             cv::Mat infer_image(std::string imgfile, bool isLinear = false) {
-                int inp_size = 255;
-                int out_size = 255;
+                const int inp_size = 255;
+                const int out_size = 255;
                 cv::Mat img = imread(imgfile);
                 cv::Mat img_;
                 cvtColor(img, img_, COLOR_BGR2RGB);
@@ -268,10 +233,45 @@ namespace cv {
                 cvtColor(img_out, out_img, COLOR_RGB2BGR);
                 return out_img;
             };
+
+        private:
+            cv::Mat mask;
+            cv::Mat dist;
+            int masked_len;
+            double error;
+
+            // RGBl of detected data and the reference
+            cv::Mat src_rgbl;
+            cv::Mat dst_rgbl;
+
+            // calculate weights and mask
+            void _cal_weights_masks(cv::Mat weights_list, double weights_coeff, cv::Mat saturate_mask) {
+                // weights
+                if (!weights_list.empty()) {
+                    weights = weights_list;
+                }
+                else if (weights_coeff != 0) {
+                    pow(dst.toLuminant(dst.cs.io), weights_coeff, weights);
+                }
+
+                // masks
+                cv::Mat weight_mask = cv::Mat::ones(src.rows, 1, CV_8U);
+                if (!weights.empty()) {
+                    weight_mask = weights > 0;
+                }
+                this->mask = (weight_mask) & (saturate_mask);
+
+                // weights' mask
+                if (!weights.empty()) {
+                    cv::Mat weights_masked = mask_copyto(this->weights, this->mask);
+                    weights = weights_masked / mean(weights_masked);
+                }
+                masked_len = sum(mask)[0];
+            };
+
         };
-
-
-      
     }
 }
+
+
 #endif

@@ -2,9 +2,9 @@
 #define __OPENCV_MCC_COLOR_HPP__
 
 #include <map>
-#include "opencv2/ccm/colorspace.hpp"
-#include "opencv2/ccm/distance.hpp"
-#include "opencv2/ccm/utils.hpp"
+#include "opencv2/mcc/colorspace.hpp"
+#include "opencv2/mcc/distance.hpp"
+#include "opencv2/mcc/utils.hpp"
 
 namespace cv {
 	namespace ccm {
@@ -16,12 +16,12 @@ namespace cv {
 		class Color {
 		public:
 			cv::Mat colors;
-			ColorSpace& cs;
+			const ColorSpace& cs;
 			cv::Mat grays;
 			cv::Mat colored;
-			std::map<ColorSpace, Color*> _history;  // todo ȡ��ָ��&����&����ָ��
+			std::map<ColorSpace, std::shared_ptr<Color>> _history;
 
-			Color(cv::Mat colors, ColorSpace& cs) :colors(colors), cs(cs) {};
+			Color(cv::Mat colors, const ColorSpace& cs) :colors(colors), cs(cs) {};
 
 			virtual ~Color() {};
 
@@ -29,7 +29,7 @@ namespace cv {
                The conversion process incorporates linear transformations to speed up.
                method is chromatic adapation method;
                when save if True, get data from self._history first; */
-			Color to(ColorSpace& other, CAM method = BRADFORD, bool save = true) {
+			Color to(const ColorSpace& other, CAM method = BRADFORD, bool save = true) {
 				if (_history.count(other) == 1) {
 
 					return *_history[other];
@@ -39,7 +39,7 @@ namespace cv {
 				}
 				Operations ops;
 				ops.add(cs.to).add(XYZ(cs.io).cam(other.io, method)).add(other.from);
-				Color* color = new Color(ops.run(colors), other);// todo �ĳ�����ָ��
+				std::shared_ptr<Color> color(new Color(ops.run(colors), other));
 				if (save) {
 					_history[other] = color;
 				}
@@ -53,12 +53,12 @@ namespace cv {
 			}
 
 			cv::Mat toGray(IO io, CAM method = BRADFORD, bool save = true) {
-				XYZ xyz(io); // todo ��colorspace�ﴴ��map����xyz��lab�����ظ�����colorspace
+				XYZ xyz(io); 
 				return channel(this->to(xyz, method, save).colors, 1);
 			}
 
 			cv::Mat toLuminant(IO io, CAM method = BRADFORD, bool save = true) {
-				Lab lab(io);// todo ��colorspace�ﴴ��map����xyz��lab�����ظ�����colorspace
+				Lab lab(io);
 				return channel(this->to(lab, method, save).colors, 0);
 			}
 
@@ -69,7 +69,7 @@ namespace cv {
 
 			/* return distance between self and other */
 			cv::Mat diff(Color& other, IO io, DISTANCE_TYPE method = CIE2000) {
-				Lab lab(io);// todo ��colorspace�ﴴ��map����xyz��lab�����ظ�����colorspace
+				Lab lab(io);
 				switch (method)
 				{
 				case cv::ccm::CIE76:

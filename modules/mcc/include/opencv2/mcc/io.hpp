@@ -18,11 +18,11 @@ namespace cv {
 
 			IO() {};
 
-			IO(std::string illuminant, std::string observer) :illuminant(illuminant), observer(observer) {}; //todo �������Ͳ����������ظ�
+			IO(std::string illuminant, std::string observer) :illuminant(illuminant), observer(observer) {}; 
 
 			virtual ~IO() {};
 
-			bool operator<(const IO& other)const { 
+			bool operator<(const IO& other) const { 
 				return (illuminant < other.illuminant || ((illuminant == other.illuminant) && (observer < other.observer))); 
 			}
 
@@ -48,7 +48,7 @@ namespace cv {
 			{E_2, { 1 / 3, 1 / 3 }}, {E_10, { 1 / 3, 1 / 3 }},
 		};
 
-		std::vector<double> xyY2XYZ(std::vector<double> xyY) {
+		std::vector<double> xyY2XYZ(const std::vector<double>& xyY) {
 			double Y = xyY.size() >= 3 ? xyY[2] : 1;
 			return { Y * xyY[0] / xyY[1], Y, Y / xyY[1] * (1 - xyY[0] - xyY[1]) };
 		}

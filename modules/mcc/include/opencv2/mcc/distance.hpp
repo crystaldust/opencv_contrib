@@ -1,7 +1,7 @@
 #ifndef __OPENCV_MCC_DISTANCE_HPP__
 #define __OPENCV_MCC_DISTANCE_HPP__
 
-#include "opencv2/ccm/utils.hpp"
+#include "opencv2/mcc/utils.hpp"
 
 namespace cv {
 	namespace ccm {

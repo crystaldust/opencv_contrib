@@ -4,13 +4,13 @@
 #include <vector>
 #include <string>
 #include <iostream>
-#include "opencv2/ccm/io.hpp"
-#include "opencv2/ccm/operations.hpp"
-#include "opencv2/ccm/utils.hpp"
+#include "opencv2/mcc/io.hpp"
+#include "opencv2/mcc/operations.hpp"
+#include "opencv2/mcc/utils.hpp"
 
 namespace cv {
 	namespace ccm {
-		
+
 		/* color space interface */
 		class ColorSpace {
 		public:
@@ -26,24 +26,27 @@ namespace cv {
 
 			ColorSpace(IO io, std::string type, bool linear) :io(io), type(type), linear(linear) {};
 
-			virtual ~ColorSpace() {};
+			virtual ~ColorSpace() {
+				l = 0;
+				nl = 0;
+			};
 
-			virtual bool relate(const ColorSpace& other) {
+			virtual bool relate(const ColorSpace& other) const {
 				return (type == other.type) && (io == other.io);
 			};
 
-			virtual Operations relation(const ColorSpace& other) { 
+			virtual Operations relation(const ColorSpace& other) const {
 				return IDENTITY_OPS;
 			};
 
 			bool operator<(const ColorSpace& other)const {
 				return (io < other.io || (io == other.io && type < other.type) || (io == other.io && type == other.type && linear < other.linear));
-				}
+			}
 		};
 
 		/* base of RGB color space;
-           the argument values are from AdobeRGB;
-           Data from https://en.wikipedia.org/wiki/Adobe_RGB_color_space */
+		   the argument values are from AdobeRGB;
+		   Data from https://en.wikipedia.org/wiki/Adobe_RGB_color_space */
 		class RGB_Base_ : public ColorSpace {
 		public:
 			//primaries
@@ -59,13 +62,13 @@ namespace cv {
 			cv::Mat M_from;
 
 			using ColorSpace::ColorSpace;
-			
+
 			/* There are 3 kinds of relationships for RGB:
-               1. Different types;    - no operation
-               1. Same type, same linear; - copy
-               2. Same type, different linear, self is nonlinear; - 2 toL
-               3. Same type, different linear, self is linear - 3 fromL*/
-			virtual Operations relation(const ColorSpace& other) {
+			   1. Different types;    - no operation
+			   1. Same type, same linear; - copy
+			   2. Same type, different linear, self is nonlinear; - 2 toL
+			   3. Same type, different linear, self is linear - 3 fromL*/
+			virtual Operations relation(const ColorSpace& other) const {
 				if (linear == other.linear) { return IDENTITY_OPS; }
 				if (linear) { return Operations({ Operation(fromL) }); }
 				return Operations({ Operation(toL) });
@@ -92,7 +95,7 @@ namespace cv {
 			virtual void _set_parameter() {};
 
 			/* calculation of M_RGBL2XYZ_base;
-               see ColorSpace.pdf for details; */
+			   see ColorSpace.pdf for details; */
 			virtual void _cal_M() {
 				cv::Mat XYZr, XYZg, XYZb, XYZ_rgbl, Srgb;
 				XYZr = cv::Mat(xyY2XYZ({ xr, yr }), true);
@@ -129,10 +132,10 @@ namespace cv {
 
 			virtual void _cal_linear() {}
 
-			virtual cv::Mat _toL(cv::Mat rgb) { return cv::Mat(); };
+			virtual cv::Mat _toL(cv::Mat& rgb) { return cv::Mat(); };
 
-			virtual cv::Mat _fromL(cv::Mat rgbl) { return cv::Mat(); };
-			
+			virtual cv::Mat _fromL(cv::Mat& rgbl) { return cv::Mat(); };
+
 		};
 
 		class AdobeRGB_Base_ : public RGB_Base_ {
@@ -141,11 +144,11 @@ namespace cv {
 			double gamma;
 
 		private:
-			virtual cv::Mat _toL(cv::Mat rgb) {
+			virtual cv::Mat _toL(cv::Mat& rgb) {
 				return gamma_correction(rgb, gamma);
 			}
 
-			virtual cv::Mat _fromL(cv::Mat rgbl) {
+			virtual cv::Mat _fromL(cv::Mat& rgbl) {
 				return gamma_correction(rgbl, 1. / gamma);
 			}
 		};
@@ -159,10 +162,10 @@ namespace cv {
 			double beta;
 			double phi;
 			double K0;
-			
+
 		private:
 			/* linearization parameters
-               see ColorSpace.pdf for details; */
+			   see ColorSpace.pdf for details; */
 			virtual void _cal_linear() {
 				alpha = a + 1;
 				K0 = a / (gamma - 1);
@@ -170,7 +173,7 @@ namespace cv {
 				beta = K0 / phi;
 			}
 
-			double _toL_ew(double x) {
+			double _toL_ew(double& x) {
 				if (x > K0) {
 					return pow(((x + alpha - 1) / alpha), gamma);
 				}
@@ -183,12 +186,12 @@ namespace cv {
 			}
 
 			/* linearization
-               see ColorSpace.pdf for details; */
-			cv::Mat _toL(cv::Mat rgb) {
+			   see ColorSpace.pdf for details; */
+			cv::Mat _toL(cv::Mat& rgb) {
 				return _elementwise(rgb, [this](double a)->double {return _toL_ew(a); });
 			}
 
-			double _fromL_ew(double x) {
+			double _fromL_ew(double& x) {
 				if (x > beta) {
 					return alpha * pow(x, 1 / gamma) - (alpha - 1);
 				}
@@ -202,7 +205,7 @@ namespace cv {
 
 			/* delinearization
 			   see ColorSpace.pdf for details; */
-			cv::Mat _fromL(cv::Mat rgbl) {
+			cv::Mat _fromL(cv::Mat& rgbl) {
 				return _elementwise(rgbl, [this](double a)->double {return _fromL_ew(a); });
 			}
 		};
@@ -213,8 +216,8 @@ namespace cv {
 
 		private:
 			/* base of sRGB-like color space;
-               the argument values are from sRGB;
-               data from https://en.wikipedia.org/wiki/SRGB */
+			   the argument values are from sRGB;
+			   data from https://en.wikipedia.org/wiki/SRGB */
 			void _set_parameter() {
 				xr = 0.64;
 				yr = 0.33;
@@ -308,7 +311,7 @@ namespace cv {
 				xb = 0.155;
 				yb = 0.07;
 				gamma = 1.8;
-			}			
+			}
 		};
 
 		/* data from https://en.wikipedia.org/wiki/Rec._709 */
@@ -347,7 +350,6 @@ namespace cv {
 			}
 		};
 
-		// todo �Ƿ��и��ó�ʼ����ʽ
 		sRGB_ sRGB(false), sRGBL(true);
 		AdobeRGB_ AdobeRGB(false), AdobeRGBL(true);
 		WideGamutRGB_ WideGamutRGB(false), WideGamutRGBL(true);
@@ -373,7 +375,6 @@ namespace cv {
 		};
 
 		_ColorSpaceInitial color_space_initial;
-		// todo �Ƿ��и��ó�ʼ����ʽend
 
 		enum CAM {
 			IDENTITY,
@@ -381,34 +382,27 @@ namespace cv {
 			BRADFORD
 		};
 
+		static std::map <std::tuple<IO, IO, CAM>, cv::Mat > CAMs;
+		const static cv::Mat Von_Kries = (cv::Mat_<double>(3, 3) << 0.40024, 0.7076, -0.08081, -0.2263, 1.16532, 0.0457, 0., 0., 0.91822);
+		const static cv::Mat Bradford = (cv::Mat_<double>(3, 3) << 0.8951, 0.2664, -0.1614, -0.7502, 1.7135, 0.0367, 0.0389, -0.0685, 1.0296);
+		const static std::map <CAM, std::vector< cv::Mat >> MAs = {
+			{IDENTITY , {cv::Mat::eye(cv::Size(3,3),CV_64FC1) , cv::Mat::eye(cv::Size(3,3),CV_64FC1)} },
+			{VON_KRIS, { Von_Kries ,Von_Kries.inv() }},
+			{BRADFORD, { Bradford ,Bradford.inv() }}
+		};
+
 		/* chromatic adaption matrices */
 		class XYZ :public ColorSpace {
 		public:
-			// todo ��const��static���α���
-			std::map <std::tuple<IO, IO, CAM>, cv::Mat > CAMs;// todo ��static 
-			//static constexpr cv::Mat Von_Kries;
-			//const static cv::Mat Bradford;
-			//const static std::map <CAM, std::vector< cv::Mat >> MAs;
-
-			cv::Mat Von_Kries = (cv::Mat_<double>(3, 3) << 0.40024, 0.7076, -0.08081, -0.2263, 1.16532, 0.0457, 0., 0., 0.91822);
-			cv::Mat Bradford = (cv::Mat_<double>(3, 3) << 0.8951, 0.2664, -0.1614, -0.7502, 1.7135, 0.0367, 0.0389, -0.0685, 1.0296);
-			std::map <CAM, std::vector< cv::Mat >> MAs = {
-				{IDENTITY , {cv::Mat::eye(cv::Size(3,3),CV_64FC1) , cv::Mat::eye(cv::Size(3,3),CV_64FC1)} },
-				{VON_KRIS, { Von_Kries ,Von_Kries.inv() }},
-				{BRADFORD, { Bradford ,Bradford.inv() }}
-			};
-
 			XYZ(IO io) : ColorSpace(io, "XYZ", true) {};
-			
+
 			Operations cam(IO dio, CAM method = BRADFORD) {
-				return (io == dio) ? Operations() : Operations({ Operation(_cam(io,dio,method).t()) });
+				return (io == dio) ? Operations() : Operations({ Operation(_cam(io, dio, method).t()) });
 			}
 
 		private:
 			/* get cam */
-
-			//todo ��̬��Ա��������static
-			cv::Mat _cam(IO sio, IO dio, CAM method = BRADFORD) {
+			cv::Mat _cam(IO sio, IO dio, CAM method = BRADFORD) const {
 				if (sio == dio) {
 					return cv::Mat::eye(cv::Size(3, 3), CV_64FC1);
 				}
@@ -446,31 +440,31 @@ namespace cv {
 			static constexpr double t0 = delta * delta * delta;
 			static constexpr double c = 4. / 29.;
 
-			Vec3d __from(Vec3d xyz) {
+			Vec3d __from(Vec3d& xyz) {
 				double x = xyz[0] / illuminants.find(io)->second[0], y = xyz[1] / illuminants.find(io)->second[1], z = xyz[2] / illuminants.find(io)->second[2];
 				auto f = [this](double t)->double { return t > t0 ? std::cbrtl(t) : (m * t + c); };
 				double fx = f(x), fy = f(y), fz = f(z);
 				return { 116. * fy - 16. ,500 * (fx - fy),200 * (fy - fz) };
 			}
 
-			cv::Mat _from(cv::Mat src) {
+			cv::Mat _from(cv::Mat& src) {
 				return _channelwise(src, [this](Vec3d a)->Vec3d {return __from(a); });
 			}
 
-			Vec3d __to(Vec3d lab) {
+			Vec3d __to(Vec3d& lab) {
 				auto f_inv = [this](double t)->double {return t > delta ? pow(t, 3.0) : (t - c) / m; };
 				double L = (lab[0] + 16.) / 116., a = lab[1] / 500., b = lab[2] / 200.;
 				return { illuminants.find(io)->second[0] * f_inv(L + a),illuminants.find(io)->second[1] * f_inv(L),illuminants.find(io)->second[2] * f_inv(L - b) };
 			}
 
-			cv::Mat _to(cv::Mat src) {
+			cv::Mat _to(cv::Mat& src) {
 				return _channelwise(src, [this](Vec3d a)->Vec3d {return __to(a); });
 			}
 
 		};
 
-		Lab Lab_D65_2(D65_2);
-		Lab Lab_D50_2(D50_2);
+		const Lab Lab_D65_2(D65_2);
+		const Lab Lab_D50_2(D50_2);
 
 	}
 }
