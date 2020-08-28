@@ -1,3 +1,31 @@
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
+
+/*
+ * MIT License
+ *
+ * Copyright (c) 2018 Pedro Diamel Marrero Fernández
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 #ifndef __OPENCV_MCC_COLOR_HPP__
 #define __OPENCV_MCC_COLOR_HPP__
 
@@ -14,7 +42,7 @@ namespace ccm
 /* color defined by color_values and color space;
 	grays is mask of grayscale color;
 	colored is mask of colored color;
-	_history is storage of historical conversion; */
+	history is storage of historical conversion; */
 class Color 
 {
 public:
@@ -22,7 +50,7 @@ public:
 	const ColorSpace& cs;
 	cv::Mat grays;
 	cv::Mat colored;
-	std::map<ColorSpace, std::shared_ptr<Color>> _history;
+	std::map<ColorSpace, std::shared_ptr<Color>> history;
 
 	Color(cv::Mat colors, const ColorSpace& cs) :colors(colors), cs(cs) {};
 
@@ -31,13 +59,13 @@ public:
 	/* change to other color space; return Color;
 		The conversion process incorporates linear transformations to speed up.
 		method is chromatic adapation method;
-		when save if True, get data from self._history first; */
+		when save if True, get data from history first; */
 	Color to(const ColorSpace& other, CAM method = BRADFORD, bool save = true) 
 	{
-		if (_history.count(other) == 1) 
+		if (history.count(other) == 1) 
 		{
 
-			return *_history[other];
+			return *history[other];
 		}
 		if (cs.relate(other)) 
 		{
@@ -48,16 +76,16 @@ public:
 		std::shared_ptr<Color> color(new Color(ops.run(colors), other));
 		if (save) 
 		{
-			_history[other] = color;
+			history[other] = color;
 		}
 		return *color;
 	}
 
-	cv::Mat channel(cv::Mat M, int i) 
+	cv::Mat channel(cv::Mat m, int i) 
 	{
-		cv::Mat dChannels[3];
-		split(M, dChannels);
-		return dChannels[i];
+		cv::Mat dchannels[3];
+		split(m, dchannels);
+		return dchannels[i];
 	}
 
 	cv::Mat toGray(IO io, CAM method = BRADFORD, bool save = true) 
@@ -78,7 +106,7 @@ public:
 		return diff(other, cs.io, method);
 	}
 
-	/* return distance between self and other */
+	/**\return distance between this and other */
 	cv::Mat diff(Color& other, IO io, DISTANCE_TYPE method = CIE2000) 
 	{
 		Lab lab(io);
@@ -102,7 +130,7 @@ public:
 	}
 
 	/* calculate gray mask */
-	void get_gray(double JDN = 2.0) 
+	void getGray(double JDN = 2.0) 
 	{
 		cv::Mat lab = to(Lab_D65_2).colors;
 		cv::Mat gray(colors.size(), colors.type());
@@ -115,7 +143,7 @@ public:
 
 	Color operator[](cv::Mat mask) 
 	{
-		return Color(mask_copyto(colors, mask), cs);
+		return Color(maskCopyTo(colors, mask), cs);
 	}
 
 	Color operator=(Color inp) 

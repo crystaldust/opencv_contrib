@@ -1,3 +1,31 @@
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
+
+/*
+ * MIT License
+ *
+ * Copyright (c) 2018 Pedro Diamel Marrero Fernández
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 #ifndef __OPENCV_MCC_LINEARIZE_HPP__
 #define __OPENCV_MCC_LINEARIZE_HPP__
 
@@ -32,26 +60,26 @@ public:
         int npoints = s.checkVector(1);           
         int nypoints = d.checkVector(1);
         cv::Mat_<double> srcX(s), srcY(d);
-        cv::Mat_<double> A = cv::Mat_<double>::ones(npoints, deg + 1);
+        cv::Mat_<double> m = cv::Mat_<double>::ones(npoints, deg + 1);
         for (int y = 0; y < npoints; ++y) 
         {
-            for (int x = 1; x < A.cols; ++x) 
+            for (int x = 1; x < m.cols; ++x) 
             {
-                A.at<double>(y, x) = srcX.at<double>(y) * A.at<double>(y, x -1);
+                m.at<double>(y, x) = srcX.at<double>(y) * m.at<double>(y, x -1);
             }
         }
-        cv::solve(A, srcY, p, DECOMP_SVD);
+        cv::solve(m, srcY, p, DECOMP_SVD);
     }
 
     virtual ~Polyfit() {};
     
     cv::Mat operator()(const cv::Mat& inp) 
     {
-        return _elementwise(inp, [this](double a)->double {return _from_ew(a); });
+        return elementWise(inp, [this](double a)->double {return fromEW(a); });
     };
 
 private:
-    double _from_ew(double x) 
+    double fromEW(double x) 
     {
         double res = 0;
         for (int d = 0; d <= deg; ++d) 
@@ -75,8 +103,8 @@ public:
     {
         cv::Mat mask_ = (s > 0) & (d > 0);
         cv::Mat src_, dst_, s_, d_;
-        src_ = mask_copyto(s, mask_);
-        dst_ = mask_copyto(d, mask_);
+        src_ = maskCopyTo(s, mask_);
+        dst_ = maskCopyTo(d, mask_);
         log(src_, s_);
         log(dst_, d_);
         p = Polyfit(s_, d_, deg);
@@ -115,38 +143,38 @@ public:
 };
 
 /* make no change */
-class Linear_identity : public Linear
+class LinearIdentity : public Linear
 {};
 
 /* gamma correction */
-class Linear_gamma : public Linear
+class LinearGamma : public Linear
 {
 public:
     double gamma;
 
-    Linear_gamma(double gamma) :gamma(gamma) {};
+    LinearGamma(double gamma) :gamma(gamma) {};
 
     cv::Mat linearize(cv::Mat inp) 
     {
-        return gamma_correction(inp, gamma);
+        return gammaCorrection(inp, gamma);
     };
 };
 
 /* grayscale polynomial fitting */
 template <class T>
-class Linear_gray :public Linear 
+class LinearGray :public Linear 
 {
 public:
     int deg;
     T p;
 
-    Linear_gray(int deg, cv::Mat src, Color dst, cv::Mat mask, RGB_Base_ cs) :deg(deg) 
+    LinearGray(int deg, cv::Mat src, Color dst, cv::Mat mask, RGBBase_ cs) :deg(deg) 
     {
-        dst.get_gray();
+        dst.getGray();
         Mat lear_gray_mask = mask & dst.grays;
         // the grayscale function is approximate for src is in relative color space;
-        src = rgb2gray(mask_copyto(src, lear_gray_mask));
-        cv::Mat dst_ = mask_copyto(dst.toGray(cs.io), lear_gray_mask);
+        src = rgb2gray(maskCopyTo(src, lear_gray_mask));
+        cv::Mat dst_ = maskCopyTo(dst.toGray(cs.io), lear_gray_mask);
         calc(src, dst_);
     }
 
@@ -164,7 +192,7 @@ public:
 
 /* fitting channels respectively */
 template <class T>
-class Linear_color :public Linear 
+class LinearColor :public Linear 
 {
 public:
     int deg;
@@ -172,23 +200,23 @@ public:
     T pg;
     T pb;
 
-    Linear_color(int deg, cv::Mat src_, Color dst, cv::Mat mask, RGB_Base_ cs) :deg(deg) 
+    LinearColor(int deg, cv::Mat src_, Color dst, cv::Mat mask, RGBBase_ cs) :deg(deg) 
     {
-        Mat src = mask_copyto(src_, mask);
-        cv::Mat dst_ = mask_copyto(dst.to(*cs.l).colors, mask);
+        Mat src = maskCopyTo(src_, mask);
+        cv::Mat dst_ = maskCopyTo(dst.to(*cs.l).colors, mask);
         calc(src, dst_);
     }
 
     // monotonically increase is not guaranteed
     void calc(const cv::Mat& src, const cv::Mat& dst) 
     {
-        cv::Mat sChannels[3];
-        cv::Mat dChannels[3];
-        split(src, sChannels);
-        split(dst, dChannels);
-        pr = T(sChannels[0], dChannels[0], deg);
-        pg = T(sChannels[1], dChannels[1], deg);
-        pb = T(sChannels[2], dChannels[2], deg);
+        cv::Mat schannels[3];
+        cv::Mat dchannels[3];
+        split(src, schannels);
+        split(dst, dchannels);
+        pr = T(schannels[0], dchannels[0], deg);
+        pg = T(schannels[1], dchannels[1], deg);
+        pb = T(schannels[2], dchannels[2], deg);
     };
 
     cv::Mat linearize(cv::Mat inp) 
@@ -203,28 +231,28 @@ public:
 };
 
 /* get linearization method */
-std::shared_ptr<Linear>  get_linear(double gamma, int deg, cv::Mat src, Color dst, cv::Mat mask, RGB_Base_ cs, LINEAR_TYPE linear_type) 
+std::shared_ptr<Linear>  getLinear(double gamma, int deg, cv::Mat src, Color dst, cv::Mat mask, RGBBase_ cs, LINEAR_TYPE linear_type) 
 {
     std::shared_ptr<Linear> p = std::make_shared<Linear>();
     switch (linear_type)
     {
     case cv::ccm::IDENTITY_:
-        p.reset(new Linear_identity());
+        p.reset(new LinearIdentity());
         break;
     case cv::ccm::GAMMA:
-        p.reset(new Linear_gamma(gamma));
+        p.reset(new LinearGamma(gamma));
         break;
     case cv::ccm::COLORPOLYFIT:
-        p.reset(new Linear_color<Polyfit>(deg, src, dst, mask, cs));
+        p.reset(new LinearColor<Polyfit>(deg, src, dst, mask, cs));
         break;
     case cv::ccm::COLORLOGPOLYFIT:
-        p.reset(new Linear_color<LogPolyfit>(deg, src, dst, mask, cs));
+        p.reset(new LinearColor<LogPolyfit>(deg, src, dst, mask, cs));
         break;
     case cv::ccm::GRAYPOLYFIT:
-        p.reset(new Linear_gray<Polyfit>(deg, src, dst, mask, cs));
+        p.reset(new LinearGray<Polyfit>(deg, src, dst, mask, cs));
         break;
     case cv::ccm::GRAYLOGPOLYFIT:
-        p.reset(new Linear_gray<LogPolyfit>(deg, src, dst, mask, cs));
+        p.reset(new LinearGray<LogPolyfit>(deg, src, dst, mask, cs));
         break;
     default:
         throw std::invalid_argument{ "Wrong linear_type!" };

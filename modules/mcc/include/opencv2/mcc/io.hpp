@@ -1,3 +1,31 @@
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
+
+/*
+ * MIT License
+ *
+ * Copyright (c) 2018 Pedro Diamel Marrero Fernández
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 #ifndef __OPENCV_MCC_IO_HPP__
 #define __OPENCV_MCC_IO_HPP__
 
@@ -35,7 +63,7 @@ public:
 	};
 };
 
-const static IO A_2("A", "2"), A_10("A", "10"),
+const IO A_2("A", "2"), A_10("A", "10"),
 	D50_2("D50", "2"), D50_10("D50", "10"),
 	D55_2("D55", "2"), D55_10("D55", "10"),
 	D65_2("D65", "2"), D65_10("D65", "10"),
@@ -59,7 +87,7 @@ std::vector<double> xyY2XYZ(const std::vector<double>& xyY)
 	return { Y * xyY[0] / xyY[1], Y, Y / xyY[1] * (1 - xyY[0] - xyY[1]) };
 }
 
-static std::map <IO, std::vector<double>> get_illuminant() 
+static std::map <IO, std::vector<double>> getIlluminant() 
 {
 	std::map <IO, std::vector<double>>  illuminants;
 	for (auto it = illuminants_xy.begin(); it != illuminants_xy.end(); ++it)
@@ -69,7 +97,7 @@ static std::map <IO, std::vector<double>> get_illuminant()
 	return illuminants;
 }
 
-const std::map<IO, std::vector<double> >  illuminants = get_illuminant(); 
+const std::map<IO, std::vector<double> >  illuminants = getIlluminant(); 
 
 } // namespace ccm
 } // namespace cv

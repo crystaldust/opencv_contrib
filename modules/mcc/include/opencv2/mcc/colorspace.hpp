@@ -1,3 +1,31 @@
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
+
+/*
+ * MIT License
+ *
+ * Copyright (c) 2018 Pedro Diamel Marrero Fernández
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 #ifndef __OPENCV_MCC_COLORSPACE_HPP__
 #define __OPENCV_MCC_COLORSPACE_HPP__
 
@@ -13,7 +41,7 @@ namespace cv
 namespace ccm 
 {
 
-/* color space interface */
+/**\Basic class for ColorSpace */
 class ColorSpace 
 {
 public:
@@ -54,7 +82,7 @@ public:
 /* base of RGB color space;
 	the argument values are from AdobeRGB;
 	Data from https://en.wikipedia.org/wiki/Adobe_RGB_color_space */
-class RGB_Base_ : public ColorSpace 
+class RGBBase_ : public ColorSpace 
 {
 public:
 	//primaries
@@ -91,14 +119,14 @@ public:
 
 	void init() 
 	{
-		_set_parameter();
-		_cal_linear();
-		_cal_M();
-		_cal_operations();
+		setParameter();
+		calLinear();
+		calM();
+		calOperations();
 	}
 
 	/* produce color space instance with linear and non-linear versions */
-	void bind(RGB_Base_& rgbl) 
+	void bind(RGBBase_& rgbl) 
 	{
 		init();
 		rgbl.init();
@@ -109,11 +137,11 @@ public:
 	}
 
 private:
-	virtual void _set_parameter() {};
+	virtual void setParameter() {};
 
 	/* calculation of M_RGBL2XYZ_base;
 		see ColorSpace.pdf for details; */
-	virtual void _cal_M() 
+	virtual void calM() 
 	{
 		cv::Mat XYZr, XYZg, XYZb, XYZ_rgbl, Srgb;
 		XYZr = cv::Mat(xyY2XYZ({ xr, yr }), true);
@@ -131,13 +159,13 @@ private:
 	};
 
 	/* operations to or from XYZ */
-	virtual void _cal_operations() 
+	virtual void calOperations() 
 	{
 		/* rgb -> rgbl */
-		toL = [this](cv::Mat rgb)->cv::Mat {return _toL(rgb); };
+		toL = [this](cv::Mat rgb)->cv::Mat {return toLFunc(rgb); };
 
 		/* rgbl -> rgb */
-		fromL = [this](cv::Mat rgbl)->cv::Mat {return _fromL(rgbl); };
+		fromL = [this](cv::Mat rgbl)->cv::Mat {return fromLFunc(rgbl); };
 
 		if (linear) 
 		{
@@ -151,42 +179,42 @@ private:
 		}
 	}
 
-	virtual void _cal_linear() {}
+	virtual void calLinear() {}
 
-	virtual cv::Mat _toL(cv::Mat& rgb) 
+	virtual cv::Mat toLFunc(cv::Mat& rgb) 
 	{ 
 		return cv::Mat(); 
 	};
 
-	virtual cv::Mat _fromL(cv::Mat& rgbl) 
+	virtual cv::Mat fromLFunc(cv::Mat& rgbl) 
 	{ 
 		return cv::Mat(); 
 	};
 
 };
 
-class AdobeRGB_Base_ : public RGB_Base_ 
+class AdobeRGBBase_ : public RGBBase_ 
 {
 public:
-	using RGB_Base_::RGB_Base_;
+	using RGBBase_::RGBBase_;
 	double gamma;
 
 private:
-	virtual cv::Mat _toL(cv::Mat& rgb) 
+	virtual cv::Mat toLFunc(cv::Mat& rgb) 
 	{
-		return gamma_correction(rgb, gamma);
+		return gammaCorrection(rgb, gamma);
 	}
 
-	virtual cv::Mat _fromL(cv::Mat& rgbl) 
+	virtual cv::Mat fromLFunc(cv::Mat& rgbl) 
 	{
-		return gamma_correction(rgbl, 1. / gamma);
+		return gammaCorrection(rgbl, 1. / gamma);
 	}
 };
 
-class sRGB_Base_ : public RGB_Base_ 
+class sRGBBase_ : public RGBBase_ 
 {
 public:
-	using RGB_Base_::RGB_Base_;
+	using RGBBase_::RGBBase_;
 	double a;
 	double gamma;
 	double alpha;
@@ -197,7 +225,7 @@ public:
 private:
 	/* linearization parameters
 		see ColorSpace.pdf for details; */
-	virtual void _cal_linear() 
+	virtual void calLinear() 
 	{
 		alpha = a + 1;
 		K0 = a / (gamma - 1);
@@ -205,7 +233,7 @@ private:
 		beta = K0 / phi;
 	}
 
-	double _toL_ew(double& x) 
+	double toLFuncEW(double& x) 
 	{
 		if (x > K0) 
 		{
@@ -223,12 +251,12 @@ private:
 
 	/* linearization
 		see ColorSpace.pdf for details; */
-	cv::Mat _toL(cv::Mat& rgb) 
+	cv::Mat toLFunc(cv::Mat& rgb) 
 	{
-		return _elementwise(rgb, [this](double a)->double {return _toL_ew(a); });
+		return elementWise(rgb, [this](double a)->double {return toLFuncEW(a); });
 	}
 
-	double _fromL_ew(double& x) 
+	double fromLFuncEW(double& x) 
 	{
 		if (x > beta) 
 		{
@@ -245,22 +273,22 @@ private:
 
 	/* delinearization
 		see ColorSpace.pdf for details; */
-	cv::Mat _fromL(cv::Mat& rgbl) 
+	cv::Mat fromLFunc(cv::Mat& rgbl) 
 	{
-		return _elementwise(rgbl, [this](double a)->double {return _fromL_ew(a); });
+		return elementWise(rgbl, [this](double a)->double {return fromLFuncEW(a); });
 	}
 };
 
-class sRGB_ :public sRGB_Base_ 
+class sRGB_ :public sRGBBase_ 
 {
 public:
-	sRGB_(bool linear) :sRGB_Base_(D65_2, "sRGB", linear) {};
+	sRGB_(bool linear) :sRGBBase_(D65_2, "sRGB", linear) {};
 
 private:
 	/* base of sRGB-like color space;
 		the argument values are from sRGB;
 		data from https://en.wikipedia.org/wiki/SRGB */
-	void _set_parameter() 
+	void setParameter() 
 	{
 		xr = 0.64;
 		yr = 0.33;
@@ -273,13 +301,13 @@ private:
 	}
 };
 
-class AdobeRGB_ : public AdobeRGB_Base_ 
+class AdobeRGB_ : public AdobeRGBBase_ 
 {
 public:
-	AdobeRGB_(bool linear = false) :AdobeRGB_Base_(D65_2, "AdobeRGB", linear) {};
+	AdobeRGB_(bool linear = false) :AdobeRGBBase_(D65_2, "AdobeRGB", linear) {};
 
 private:
-	void _set_parameter() 
+	void setParameter() 
 	{
 		xr = 0.64;
 		yr = 0.33;
@@ -292,13 +320,13 @@ private:
 };
 
 /* data from https://en.wikipedia.org/wiki/Wide-gamut_RGB_color_space */
-class WideGamutRGB_ : public AdobeRGB_Base_ 
+class WideGamutRGB_ : public AdobeRGBBase_ 
 {
 public:
-	WideGamutRGB_(bool linear = false) :AdobeRGB_Base_(D50_2, "WideGamutRGB", linear) {};
+	WideGamutRGB_(bool linear = false) :AdobeRGBBase_(D50_2, "WideGamutRGB", linear) {};
 
 private:
-	void _set_parameter() 
+	void setParameter() 
 	{
 		xr = 0.7347;
 		yr = 0.2653;
@@ -311,13 +339,13 @@ private:
 };
 
 /* data from https://en.wikipedia.org/wiki/ProPhoto_RGB_color_space */
-class ProPhotoRGB_ : public AdobeRGB_Base_ 
+class ProPhotoRGB_ : public AdobeRGBBase_ 
 {
 public:
-	ProPhotoRGB_(bool linear = false) :AdobeRGB_Base_(D50_2, "ProPhotoRGB", linear) {};
+	ProPhotoRGB_(bool linear = false) :AdobeRGBBase_(D50_2, "ProPhotoRGB", linear) {};
 
 private:
-	void _set_parameter() 
+	void setParameter() 
 	{
 		xr = 0.734699;
 		yr = 0.265301;
@@ -330,13 +358,13 @@ private:
 };
 
 /* data from https://en.wikipedia.org/wiki/DCI-P3 */
-class DCI_P3_RGB_ : public AdobeRGB_Base_ 
+class DCI_P3_RGB_ : public AdobeRGBBase_ 
 {
 public:
-	DCI_P3_RGB_(bool linear = false) :AdobeRGB_Base_(D65_2, "DCI_P3_RGB", linear) {};
+	DCI_P3_RGB_(bool linear = false) :AdobeRGBBase_(D65_2, "DCI_P3_RGB", linear) {};
 
 private:
-	void _set_parameter() 
+	void setParameter() 
 	{
 		xr = 0.68;
 		yr = 0.32;
@@ -349,13 +377,13 @@ private:
 };
 
 /* data from http://www.brucelindbloom.com/index.html?WorkingSpaceInfo.html */
-class AppleRGB_ : public AdobeRGB_Base_ 
+class AppleRGB_ : public AdobeRGBBase_ 
 {
 public:
-	AppleRGB_(bool linear = false) :AdobeRGB_Base_(D65_2, "AppleRGB", linear) {};
+	AppleRGB_(bool linear = false) :AdobeRGBBase_(D65_2, "AppleRGB", linear) {};
 
 private:
-	void _set_parameter() 
+	void setParameter() 
 	{
 		xr = 0.625;
 		yr = 0.34;
@@ -368,13 +396,13 @@ private:
 };
 
 /* data from https://en.wikipedia.org/wiki/Rec._709 */
-class REC_709_RGB_ : public sRGB_Base_ 
+class REC_709_RGB_ : public sRGBBase_ 
 {
 public:
-	REC_709_RGB_(bool linear) :sRGB_Base_(D65_2, "REC_709_RGB", linear) {};
+	REC_709_RGB_(bool linear) :sRGBBase_(D65_2, "REC_709_RGB", linear) {};
 
 private:
-	void _set_parameter() 
+	void setParameter() 
 	{
 		xr = 0.64;
 		yr = 0.33;
@@ -388,13 +416,13 @@ private:
 };
 
 /* data from https://en.wikipedia.org/wiki/Rec._2020 */
-class REC_2020_RGB_ : public sRGB_Base_ 
+class REC_2020_RGB_ : public sRGBBase_ 
 {
 public:
-	REC_2020_RGB_(bool linear) :sRGB_Base_(D65_2, "REC_2020_RGB", linear) {};
+	REC_2020_RGB_(bool linear) :sRGBBase_(D65_2, "REC_2020_RGB", linear) {};
 
 private:
-	void _set_parameter() 
+	void setParameter() 
 	{
 		xr = 0.708;
 		yr = 0.292;
@@ -416,10 +444,10 @@ AppleRGB_ AppleRGB(false), AppleRGBL(true);
 REC_709_RGB_ REC_709_RGB(false), REC_709_RGBL(true);
 REC_2020_RGB_ REC_2020_RGB(false), REC_2020_RGBL(true);
 
-class _ColorSpaceInitial 
+class ColorSpaceInitial 
 {
 public:
-	_ColorSpaceInitial() 
+	ColorSpaceInitial() 
 	{
 		sRGB.bind(sRGBL);
 		AdobeRGB.bind(AdobeRGBL);
@@ -433,46 +461,42 @@ public:
 	}
 };
 
-_ColorSpaceInitial color_space_initial;
+ColorSpaceInitial color_space_initial;
 
 enum CAM 
 {
 	IDENTITY,
-	VON_KRIS,
+	VON_KRIES,
 	BRADFORD
 };
 
-static std::map <std::tuple<IO, IO, CAM>, cv::Mat > CAMs;
-const static cv::Mat Von_Kries = (cv::Mat_<double>(3, 3) << 0.40024, 0.7076, -0.08081, -0.2263, 1.16532, 0.0457, 0., 0., 0.91822);
-const static cv::Mat Bradford = (cv::Mat_<double>(3, 3) << 0.8951, 0.2664, -0.1614, -0.7502, 1.7135, 0.0367, 0.0389, -0.0685, 1.0296);
-const static std::map <CAM, std::vector< cv::Mat >> MAs = {
-	{IDENTITY , {cv::Mat::eye(cv::Size(3,3),CV_64FC1) , cv::Mat::eye(cv::Size(3,3),CV_64FC1)} },
-	{VON_KRIS, { Von_Kries ,Von_Kries.inv() }},
-	{BRADFORD, { Bradford ,Bradford.inv() }}
-};
+
 
 /* chromatic adaption matrices */
 class XYZ :public ColorSpace 
 {
 public:
 	XYZ(IO io) : ColorSpace(io, "XYZ", true) {};
-
+	static std::map <std::tuple<IO, IO, CAM>, cv::Mat > cams;
+    const static cv::Mat Von_Kries;
+	const static cv::Mat Bradford;
+	const static std::map <CAM, std::vector< cv::Mat >> MAs;
 	Operations cam(IO dio, CAM method = BRADFORD) 
 	{
-		return (io == dio) ? Operations() : Operations({ Operation(_cam(io, dio, method).t()) });
+		return (io == dio) ? Operations() : Operations({ Operation(cam_(io, dio, method).t()) });
 	}
 
 private:
 	/* get cam */
-	cv::Mat _cam(IO sio, IO dio, CAM method = BRADFORD) const 
+	cv::Mat cam_(IO sio, IO dio, CAM method = BRADFORD) const 
 	{
 		if (sio == dio) 
 		{
 			return cv::Mat::eye(cv::Size(3, 3), CV_64FC1);
 		}
-		if (CAMs.count(std::make_tuple(dio, sio, method)) == 1) 
+		if (cams.count(std::make_tuple(dio, sio, method)) == 1) 
 		{
-			return CAMs[std::make_tuple(dio, sio, method)];
+			return cams[std::make_tuple(dio, sio, method)];
 		}
 
 		/* function from http ://www.brucelindbloom.com/index.html?ColorCheckerRGB.html */
@@ -482,11 +506,19 @@ private:
 		cv::Mat MA_inv = MAs.at(method)[1];
 		cv::Mat M = MA_inv * cv::Mat::diag((MA * XYZws) / (MA * XYZWd)) * MA;
 
-		CAMs[std::make_tuple(dio, sio, method)] = M;
-		CAMs[std::make_tuple(sio, dio, method)] = M.inv();
+		cams[std::make_tuple(dio, sio, method)] = M;
+		cams[std::make_tuple(sio, dio, method)] = M.inv();
 		return M;
 	}
 
+};
+
+XYZ::Von_Kries = (cv::Mat_<double>(3, 3) << 0.40024, 0.7076, -0.08081, -0.2263, 1.16532, 0.0457, 0., 0., 0.91822);
+XYZ::Bradford = (cv::Mat_<double>(3, 3) << 0.8951, 0.2664, -0.1614, -0.7502, 1.7135, 0.0367, 0.0389, -0.0685, 1.0296);
+XYZ::MAs = {
+	{IDENTITY , { cv::Mat::eye(cv::Size(3,3),CV_64FC1) , cv::Mat::eye(cv::Size(3,3),CV_64FC1)} },
+	{VON_KRIES, { Von_Kries ,Von_Kries.inv() }},
+	{BRADFORD, { Bradford ,Bradford.inv() }}
 };
 
 const XYZ XYZ_D65_2(D65_2);
@@ -497,8 +529,8 @@ class Lab :public ColorSpace
 public:
 	Lab(IO io) : ColorSpace(io, "XYZ", true) 
 	{
-		to = { Operation([this](cv::Mat src)->cv::Mat {return _to(src); }) };
-		from = { Operation([this](cv::Mat src)->cv::Mat {return _from(src); }) };
+		to = { Operation([this](cv::Mat src)->cv::Mat {return tosrc(src); }) };
+		from = { Operation([this](cv::Mat src)->cv::Mat {return fromsrc(src); }) };
 	}
 
 private:
@@ -507,7 +539,7 @@ private:
 	static constexpr double t0 = delta * delta * delta;
 	static constexpr double c = 4. / 29.;
 
-	cv::Vec3d __from(cv::Vec3d& xyz) 
+	cv::Vec3d fromxyz(cv::Vec3d& xyz) 
 	{
 		double x = xyz[0] / illuminants.find(io)->second[0], y = xyz[1] / illuminants.find(io)->second[1], z = xyz[2] / illuminants.find(io)->second[2];
 		auto f = [this](double t)->double { return t > t0 ? std::cbrtl(t) : (m * t + c); };
@@ -515,21 +547,21 @@ private:
 		return { 116. * fy - 16. ,500 * (fx - fy),200 * (fy - fz) };
 	}
 
-	cv::Mat _from(cv::Mat& src) 
+	cv::Mat fromsrc(cv::Mat& src) 
 	{
-		return _channelwise(src, [this](cv::Vec3d a)->cv::Vec3d {return __from(a); });
+		return channelWise(src, [this](cv::Vec3d a)->cv::Vec3d {return fromxyz(a); });
 	}
 
-	cv::Vec3d __to(cv::Vec3d& lab) 
+	cv::Vec3d tolab(cv::Vec3d& lab) 
 	{
 		auto f_inv = [this](double t)->double {return t > delta ? pow(t, 3.0) : (t - c) / m; };
 		double L = (lab[0] + 16.) / 116., a = lab[1] / 500., b = lab[2] / 200.;
 		return { illuminants.find(io)->second[0] * f_inv(L + a),illuminants.find(io)->second[1] * f_inv(L),illuminants.find(io)->second[2] * f_inv(L - b) };
 	}
 
-	cv::Mat _to(cv::Mat& src) 
+	cv::Mat tosrc(cv::Mat& src) 
 	{
-		return _channelwise(src, [this](cv::Vec3d a)->cv::Vec3d {return __to(a); });
+		return channelWise(src, [this](cv::Vec3d a)->cv::Vec3d {return tolab(a); });
 	}
 };
 

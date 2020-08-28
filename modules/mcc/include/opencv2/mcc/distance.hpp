@@ -1,3 +1,31 @@
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
+
+/*
+ * MIT License
+ *
+ * Copyright (c) 2018 Pedro Diamel Marrero Fernández
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 #ifndef __OPENCV_MCC_DISTANCE_HPP__
 #define __OPENCV_MCC_DISTANCE_HPP__
 
@@ -20,12 +48,12 @@ enum DISTANCE_TYPE
 	RGBL
 };
 
-double delta_cie76(cv::Vec3d lab1, cv::Vec3d lab2) 
+double deltaCIE76(cv::Vec3d lab1, cv::Vec3d lab2) 
 {
 	return norm(lab1 - lab2);
 };
 
-double delta_cie94(cv::Vec3d lab1, cv::Vec3d lab2, double kH = 1.0, double kC = 1.0, double kL = 1.0, double k1 = 0.045, double k2 = 0.015) 
+double deltaCIE94(cv::Vec3d lab1, cv::Vec3d lab2, double kH = 1.0, double kC = 1.0, double kL = 1.0, double k1 = 0.045, double k2 = 0.015) 
 {
 	double dl = lab1[0] - lab2[0];
 	double c1 = sqrt(pow(lab1[1], 2) + pow(lab1[2], 2));
@@ -42,22 +70,22 @@ double delta_cie94(cv::Vec3d lab1, cv::Vec3d lab2, double kH = 1.0, double kC = 
 	return res > 0 ? sqrt(res) : 0;
 }
 
-double delta_cie94_graphic_arts(cv::Vec3d lab1, cv::Vec3d lab2) 
+double deltaCIE94GraphicArts(cv::Vec3d lab1, cv::Vec3d lab2) 
 {
-	return delta_cie94(lab1, lab2);
+	return deltaCIE94(lab1, lab2);
 }
 
-double to_rad(double degree) 
+double toRad(double degree) 
 { 
 	return degree / 180 * CV_PI;
 };
 
-double delta_cie94_textiles(cv::Vec3d lab1, cv::Vec3d lab2) 
+double deltaCIE94Textiles(cv::Vec3d lab1, cv::Vec3d lab2) 
 {
-	return delta_cie94(lab1, lab2, 1.0, 1.0, 2.0, 0.048, 0.014);
+	return deltaCIE94(lab1, lab2, 1.0, 1.0, 2.0, 0.048, 0.014);
 }
 
-double delta_ciede2000_(cv::Vec3d lab1, cv::Vec3d lab2, double kL = 1.0, double kC = 1.0, double kH = 1.0) 
+double deltaCIEDE2000_(cv::Vec3d lab1, cv::Vec3d lab2, double kL = 1.0, double kC = 1.0, double kH = 1.0) 
 {
 	double delta_L_apo = lab2[0] - lab1[0];
 	double l_bar_apo = (lab1[0] + lab2[0]) / 2.0;
@@ -127,23 +155,23 @@ double delta_ciede2000_(cv::Vec3d lab1, cv::Vec3d lab2, double kL = 1.0, double 
 	}
 
 	double delta_H_apo = 2.0 * sqrt(C1_apo * C2_apo) * sin(delta_h_apo / 2.0);
-	double T = 1.0 - 0.17 * cos(H_bar_apo - to_rad(30.)) + 0.24 * cos(2.0 * H_bar_apo) + 
-		0.32 * cos(3.0 * H_bar_apo + to_rad(6.0)) - 0.2 * cos(4.0 * H_bar_apo - to_rad(63.0));
+	double T = 1.0 - 0.17 * cos(H_bar_apo - toRad(30.)) + 0.24 * cos(2.0 * H_bar_apo) + 
+		0.32 * cos(3.0 * H_bar_apo + toRad(6.0)) - 0.2 * cos(4.0 * H_bar_apo - toRad(63.0));
 	double sC = 1.0 + 0.045 * C_bar_apo;
 	double sH = 1.0 + 0.015 * C_bar_apo * T;
 	double sL = 1.0 + ((0.015 * pow(l_bar_apo - 50.0, 2.0)) / sqrt(20.0 + pow(l_bar_apo - 50.0, 2.0)));
-	double RT = -2.0 * G * sin(to_rad(60.0) * exp(-pow((H_bar_apo - to_rad(275.0)) / to_rad(25.0), 2.0)));
+	double RT = -2.0 * G * sin(toRad(60.0) * exp(-pow((H_bar_apo - toRad(275.0)) / toRad(25.0), 2.0)));
 	double res = (pow(delta_L_apo / (kL * sL), 2.0) + pow(delta_C_apo / (kC * sC), 2.0) + 
 		pow(delta_H_apo / (kH * sH), 2.0) + RT * (delta_C_apo / (kC * sC)) * (delta_H_apo / (kH * sH)));
 	return res > 0 ? sqrt(res) : 0;
 }
 
-double delta_ciede2000(cv::Vec3d lab1, cv::Vec3d lab2) 
+double deltaCIEDE2000(cv::Vec3d lab1, cv::Vec3d lab2) 
 {
-	return delta_ciede2000_(lab1, lab2);
+	return deltaCIEDE2000_(lab1, lab2);
 }
 
-double delta_cmc(cv::Vec3d lab1, cv::Vec3d lab2, double kL = 1, double kC = 1) 
+double deltaCMC(cv::Vec3d lab1, cv::Vec3d lab2, double kL = 1, double kC = 1) 
 {
 	double dL = lab2[0] - lab1[0];
 	double da = lab2[1] - lab1[1];
@@ -165,7 +193,7 @@ double delta_cmc(cv::Vec3d lab1, cv::Vec3d lab2, double kL = 1, double kC = 1)
 	}
 
 	double F = pow(C1, 2) / sqrt(pow(C1, 4) + 1900);
-	double T = (H1 > to_rad(164) && H1 <= to_rad(345)) ? 0.56 + abs(0.2 * cos(H1 + to_rad(168))) : 0.36 + abs(0.4 * cos(H1 + to_rad(35)));;
+	double T = (H1 > toRad(164) && H1 <= toRad(345)) ? 0.56 + abs(0.2 * cos(H1 + toRad(168))) : 0.36 + abs(0.4 * cos(H1 + toRad(35)));;
 	double sL = lab1[0] < 16. ? 0.511 : (0.040975 * lab1[0]) / (1.0 + 0.01765 * lab1[0]);;
 	double sC = (0.0638 * C1) / (1.0 + 0.0131 * C1) + 0.638;
 	double sH = sC * (F * T + 1.0 - F);
@@ -173,14 +201,14 @@ double delta_cmc(cv::Vec3d lab1, cv::Vec3d lab2, double kL = 1, double kC = 1)
 	return sqrt(pow(dL / (kL * sL), 2.0) + pow(dC / (kC * sC), 2.0) + pow(dH / sH, 2.0));
 }
 
-double delta_cmc_1to1(cv::Vec3d lab1, cv::Vec3d lab2) 
+double deltaCMC1To1(cv::Vec3d lab1, cv::Vec3d lab2) 
 {
-	return delta_cmc(lab1, lab2);
+	return deltaCMC(lab1, lab2);
 }
 
-double delta_cmc_2to1(cv::Vec3d lab1, cv::Vec3d lab2) 
+double deltaCMC2To1(cv::Vec3d lab1, cv::Vec3d lab2) 
 {
-	return delta_cmc(lab1, lab2, 2, 1);
+	return deltaCMC(lab1, lab2, 2, 1);
 }
 
 cv::Mat distance(cv::Mat src, cv::Mat ref, DISTANCE_TYPE distance_type) 
@@ -188,21 +216,21 @@ cv::Mat distance(cv::Mat src, cv::Mat ref, DISTANCE_TYPE distance_type)
 	switch (distance_type)
 	{
 	case cv::ccm::CIE76:
-		return _distancewise(src, ref, delta_cie76);
+		return distanceWise(src, ref, deltaCIE76);
 	case cv::ccm::CIE94_GRAPHIC_ARTS:
-		return _distancewise(src, ref, delta_cie94_graphic_arts);
+		return distanceWise(src, ref, deltaCIE94GraphicArts);
 	case cv::ccm::CIE94_TEXTILES:
-		return _distancewise(src, ref, delta_cie94_textiles);
+		return distanceWise(src, ref, deltaCIE94Textiles);
 	case cv::ccm::CIE2000:
-		return _distancewise(src, ref, delta_ciede2000);
+		return distanceWise(src, ref, deltaCIEDE2000);
 	case cv::ccm::CMC_1TO1:
-		return _distancewise(src, ref, delta_cmc_1to1);
+		return distanceWise(src, ref, deltaCMC1To1);
 	case cv::ccm::CMC_2TO1:
-		return _distancewise(src, ref, delta_cmc_2to1);
+		return distanceWise(src, ref, deltaCMC2To1);
 	case cv::ccm::RGB:
-		return _distancewise(src, ref, delta_cie76);
+		return distanceWise(src, ref, deltaCIE76);
 	case cv::ccm::RGBL:
-		return _distancewise(src, ref, delta_cie76);
+		return distanceWise(src, ref, deltaCIE76);
 	default:
 		throw std::invalid_argument { "Wrong distance_type!" };
 		break;
