@@ -32,7 +32,6 @@
 
 #include "mcc/checker_detector.hpp"
 #include "mcc/checker_model.hpp"
-#include "mcc/ccm.hpp"
 
 
 /** @defgroup mcc Macbeth Chart module
