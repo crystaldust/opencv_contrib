@@ -47,12 +47,28 @@ enum DISTANCE_TYPE {
     RGBL
 };
 
+double deltaCIE76(cv::Vec3d lab1, cv::Vec3d lab2);
+double deltaCIE94(cv::Vec3d lab1, cv::Vec3d lab2, double kH = 1.0,
+                  double kC = 1.0, double kL = 1.0, double k1 = 0.045,
+                  double k2 = 0.015);
+double deltaCIE94GraphicArts(cv::Vec3d lab1, cv::Vec3d lab2);
+double toRad(double degree);
+double deltaCIE94Textiles(cv::Vec3d lab1, cv::Vec3d lab2);
+double deltaCIEDE2000_(cv::Vec3d lab1, cv::Vec3d lab2, double kL = 1.0,
+                       double kC = 1.0, double kH = 1.0);
+double deltaCIEDE2000(cv::Vec3d lab1, cv::Vec3d lab2);
+double deltaCMC(cv::Vec3d lab1, cv::Vec3d lab2, double kL = 1, double kC = 1);
+double deltaCMC1To1(cv::Vec3d lab1, cv::Vec3d lab2);
+double deltaCMC2To1(cv::Vec3d lab1, cv::Vec3d lab2);
+cv::Mat distance(cv::Mat src, cv::Mat ref, DISTANCE_TYPE distance_type);
+
+
 /* *\ brief  distance between two points in formula CIE76
    *\ param lab1 a 3D vector
    *\ param lab2 a 3D vector
    *\ return distance between lab1 and lab2
 */
-double deltaCIE76(cv::Vec3d lab1, cv::Vec3d lab2) { return norm(lab1 - lab2); };
+double deltaCIE76(cv::Vec3d lab1, cv::Vec3d lab2) { return norm(lab1 - lab2);};
 
 /* *\ brief  distance between two points in formula CIE94
    *\ param lab1 a 3D vector
@@ -64,9 +80,8 @@ double deltaCIE76(cv::Vec3d lab1, cv::Vec3d lab2) { return norm(lab1 - lab2); };
    *\ param k2 second scale parameter
    *\ return distance between lab1 and lab2
 */
-double deltaCIE94(cv::Vec3d lab1, cv::Vec3d lab2, double kH = 1.0,
-                  double kC = 1.0, double kL = 1.0, double k1 = 0.045,
-                  double k2 = 0.015) {
+double deltaCIE94(cv::Vec3d lab1, cv::Vec3d lab2, double kH,
+                  double kC, double kL, double k1, double k2) {
     double dl = lab1[0] - lab2[0];
     double c1 = sqrt(pow(lab1[1], 2) + pow(lab1[2], 2));
     double c2 = sqrt(pow(lab2[1], 2) + pow(lab2[2], 2));
@@ -101,8 +116,8 @@ double deltaCIE94Textiles(cv::Vec3d lab1, cv::Vec3d lab2) {
    *\ param kH Hue scale
    *\ return distance between lab1 and lab2
 */
-double deltaCIEDE2000_(cv::Vec3d lab1, cv::Vec3d lab2, double kL = 1.0,
-                       double kC = 1.0, double kH = 1.0) {
+double deltaCIEDE2000_(cv::Vec3d lab1, cv::Vec3d lab2, double kL,
+                       double kC, double kH) {
     double delta_L_apo = lab2[0] - lab1[0];
     double l_bar_apo = (lab1[0] + lab2[0]) / 2.0;
     double C1 = sqrt(pow(lab1[1], 2) + pow(lab1[2], 2));
@@ -175,14 +190,14 @@ double deltaCIEDE2000(cv::Vec3d lab1, cv::Vec3d lab2) {
     return deltaCIEDE2000_(lab1, lab2);
 }
 
-/* *\ brief  distance between two points  in formula CMC
+/* *\ brief  distance between two points in formula CMC
    *\ param lab1 a 3D vector
    *\ param lab2 a 3D vector
    *\ param kL Lightness scale
    *\ param kC Chroma scale
    *\ return distance between lab1 and lab2
 */
-double deltaCMC(cv::Vec3d lab1, cv::Vec3d lab2, double kL = 1, double kC = 1) {
+double deltaCMC(cv::Vec3d lab1, cv::Vec3d lab2, double kL, double kC) {
     double dL = lab2[0] - lab1[0];
     double da = lab2[1] - lab1[1];
     double db = lab2[2] - lab1[2];
