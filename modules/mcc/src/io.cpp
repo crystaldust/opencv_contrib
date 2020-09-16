@@ -44,12 +44,5 @@ bool IO::operator==(const IO& other) const
     return illuminant == other.illuminant && observer == other.observer;
 };
 
-// data from https://en.wikipedia.org/wiki/Standard_illuminant.
-std::vector<double> xyY2XYZ(const std::vector<double>& xyY)
-{
-    double Y = xyY.size() >= 3 ? xyY[2] : 1;
-    return { Y * xyY[0] / xyY[1], Y, Y / xyY[1] * (1 - xyY[0] - xyY[1]) };
-}
-
 } // namespace ccm
 } // namespace cv
