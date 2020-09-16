@@ -51,17 +51,5 @@ std::vector<double> xyY2XYZ(const std::vector<double>& xyY)
     return { Y * xyY[0] / xyY[1], Y, Y / xyY[1] * (1 - xyY[0] - xyY[1]) };
 }
 
-/* *\ brief function to get illuminants*/
-std::map <IO, std::vector<double>> getIlluminant()
-{
-    std::map <IO, std::vector<double>>  illuminants_;
-    for (auto it = illuminants_xy.begin(); it != illuminants_xy.end(); ++it)
-    {
-        illuminants_[it->first] = xyY2XYZ(it->second);
-    }
-    return illuminants_;
-}
-std::map<IO, std::vector<double>> illuminants = getIlluminant();
-
 } // namespace ccm
 } // namespace cv

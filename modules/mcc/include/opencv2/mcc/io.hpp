@@ -71,11 +71,6 @@ const static std::map<IO, std::vector<double>> illuminants_xy =
 
 std::vector<double> xyY2XYZ(const std::vector<double>& xyY);
 
-/* *\ brief function to get illuminants*/
-std::map <IO, std::vector<double>> getIlluminant();
-
-CV_EXPORTS_W extern std::map<IO, std::vector<double>> illuminants;
-
 } // namespace ccm
 } // namespace cv
 
