@@ -95,9 +95,9 @@ TEST(CV_ccmRunColorCorrection, test_model)
     ASSERT_MAT_NEAR(dst_rgbl, model.dst_rgbl, 1e-4);
 
     Mat ccm = (Mat_<double>(3, 3) <<
-                0.7409443, 0.35435699, 0.33689953,
-                0.20459753, 0.84167375, 0.07261064,
-                -0.20511954, 0.1767599, 3.10780907);
+				0.37408717, 0.02066172, 0.05796725,
+				0.12684056, 0.77364991, -0.01566532,
+				-0.27464866, 0.00652140, 2.74593262);
     ASSERT_MAT_NEAR(model.ccm, ccm, 1e-4);
 
     Mat mask = Mat::ones(24, 1, CV_8U);
@@ -113,12 +113,12 @@ TEST(CV_ccmRunColorCorrection, test_masks_weights_1)
                             0.7, 0, 0, 0.8, 0, 0);
     ColorCorrectionModel model1(s / 255, Macbeth_D50_2, sRGB, CCM_3x3, CIE2000, GAMMA, 2.2, 3, { 0, 0.98 }, weights_list_, 1.5);
 
-    Mat weights = (Mat_<double>(1, 8) <<
+    Mat weights = (Mat_<double>(8, 1) <<
                             1.15789474, 1.26315789, 1.36842105, 1.47368421,
                             0.52631579, 0.63157895, 0.73684211, 0.84210526);
     ASSERT_MAT_NEAR(model1.weights, weights, 1e-4);
 
-    Mat mask = (Mat_<double>(24, 1) <<
+    Mat mask = (Mat_<u_char>(24, 1) <<
                             true, false, false, true, false, false,
                             true, false, false, true, false, false,
                             true, false, false, true, false, false,
@@ -130,14 +130,14 @@ TEST(CV_ccmRunColorCorrection, test_masks_weights_2)
 {
     ColorCorrectionModel model2(s / 255, Macbeth_D50_2, sRGB, CCM_3x3, CIE2000, GAMMA, 2.2, 3, {0.05, 0.93}, Mat(), 1.5);
 
-    Mat weights = (Mat_<double>(24, 1) <<
+    Mat weights = (Mat_<double>(20, 1) <<
                             0.65554256, 1.49454705, 1.00499244, 0.79735434, 1.16327759,
                             1.68623868, 1.37973155, 0.73213388, 1.0169629, 0.47430246,
                             1.70312161, 0.45414218, 1.15910007, 0.7540434, 1.05049802,
                             1.04551645, 1.54082353, 1.02453421, 0.6015915, 0.26154558);
     ASSERT_MAT_NEAR(model2.weights, weights, 1e-4);
 
-    Mat mask = (Mat_<bool>(24, 1) <<
+    Mat mask = (Mat_<u_char>(24, 1) <<
                             true, true, true, true, true, true,
                             true, true, true, true, false, true,
                             true, true, true, false, true, true,

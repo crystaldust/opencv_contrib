@@ -26,20 +26,23 @@ TEST(CV_ccmUtils, test_gamma_correction)
 
 TEST(CV_ccmUtils, test_saturate)
 {
-    Mat x = (Mat_<double>(5, 3) <<
-            0., 0.5, 0.,
-            0., 0.3, 0.4,
-            0.3, 0.8, 0.4,
-            0.7, 0.6, 0.2,
-            1., 0.8, 0.5);
-    Mat y = (Mat_<bool>(1, 5) <<false, false, true, true, false);
+    Mat x = (Mat_<Vec3d>(5, 1) <<
+            Vec3d(0., 0.5, 0.),
+            Vec3d(0., 0.3, 0.4),
+            Vec3d(0.3, 0.8, 0.4),
+            Vec3d(0.7, 0.6, 0.2),
+            Vec3d(1., 0.8, 0.5));
+    Mat y = (Mat_<bool>(5, 1) <<false, false, true, true, false);
     ASSERT_MAT_NEAR(saturate(x, 0.2, 0.8), y, 0.0);
 }
 
 TEST(CV_ccmUtils, test_rgb2gray)
 {
-    Mat x = (Mat_<double>(1, 3) <<0.2, 0.3, 0.4);
+    Mat x = (Mat_<Vec3d>(1, 1) << Vec3d(0.2, 0.3, 0.4));
     Mat y = (Mat_<double>(1, 1) <<0.28596);
+	std::cout << x << std::endl;
+	std::cout << "vs" << std::endl;
+	std::cout << y << std::endl;
     ASSERT_MAT_NEAR(rgb2gray(x), y, 1e-4);
 }
 

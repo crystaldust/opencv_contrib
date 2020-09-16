@@ -111,7 +111,7 @@ void ColorCorrectionModel::calWeightsMasks(Mat weights_list, double weights_coef
     }
     else if (weights_coeff != 0)
     {
-        pow(dst.toLuminant(dst.cs.io), weights_coeff, weights);
+        pow(dst.toLuminant(cs.io), weights_coeff, weights);
     }
 
     // masks
