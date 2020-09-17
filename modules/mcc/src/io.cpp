@@ -26,29 +26,30 @@
  * SOFTWARE.
  */
 
-#ifndef __OPENCV_MCC_HPP__
-#define __OPENCV_MCC_HPP__
 
+#include "opencv2/mcc/io.hpp"
+namespace cv
+{
+namespace ccm
+{
+IO::IO(std::string illuminant_, std::string observer_) :illuminant(illuminant_), observer(observer_) {};
 
-#include "mcc/checker_detector.hpp"
-#include "mcc/checker_model.hpp"
-#include "mcc/ccm.hpp"
+bool IO::operator<(const IO& other) const
+{
+    return (illuminant < other.illuminant || ((illuminant == other.illuminant) && (observer < other.observer)));
+}
 
-/** @defgroup mcc Macbeth Chart module
+bool IO::operator==(const IO& other) const
+{
+    return illuminant == other.illuminant && observer == other.observer;
+};
 
-Introduction
-------------
+// data from https://en.wikipedia.org/wiki/Standard_illuminant.
+std::vector<double> xyY2XYZ(const std::vector<double>& xyY)
+{
+    double Y = xyY.size() >= 3 ? xyY[2] : 1;
+    return { Y * xyY[0] / xyY[1], Y, Y / xyY[1] * (1 - xyY[0] - xyY[1]) };
+}
 
-ColorCharts are a tool for calibrating the color profile of camera, which not
-only depends on the intrinsic and extrinsic parameters of camera but also on the
-lighting conditions. This is done by taking the image of a chart, such that the
-value of its colors present in it known, in the image the color values changes
-depeding on many variables, this gives us the colors initially present and the
-colors that are present in the image, based on this information we can apply any
-suitable algorithm to find the actual color of all the objects present in the
-image.
-
-
-*/
-
-#endif
+} // namespace ccm
+} // namespace cv

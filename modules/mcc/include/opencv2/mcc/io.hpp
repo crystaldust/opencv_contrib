@@ -1,37 +1,36 @@
 // This file is part of OpenCV project.
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
-//
-//
-//                       License Agreement
-//              For Open Source Computer Vision Library
-//
-// Copyright(C) 2020, Huawei Technologies Co.,Ltd. All rights reserved.
-// Third party copyrights are property of their respective owners.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//             http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// Author: Longbu Wang <wanglongbu@huawei.com.com>
-//         Jinheng Zhang <zhangjinheng1@huawei.com>
-//         Chenqi Shan <shanchenqi@huawei.com>
+
+/*
+ * MIT License
+ *
+ * Copyright (c) 2018 Pedro Diamel Marrero Fernández
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 #ifndef __OPENCV_MCC_IO_HPP__
 #define __OPENCV_MCC_IO_HPP__
 
-#include <string>
-#include <iostream>
-#include <map>
 #include <opencv2/core.hpp>
+#include <map>
 
 namespace cv
 {
@@ -39,29 +38,17 @@ namespace ccm
 {
 
 /* *\ brief Io is the meaning of illuminant and observer. See notes of ccm.hpp
-   *          for supported list for illuminant and observer*/
-class IO
+ *          for supported list for illuminant and observer*/
+class CV_EXPORTS_W IO
 {
 public:
-
     std::string illuminant;
     std::string observer;
-
-    IO() {};
-
-    IO(std::string illuminant_, std::string observer_) :illuminant(illuminant_), observer(observer_) {};
-
-    virtual ~IO() {};
-
-    bool operator<(const IO& other) const
-    {
-        return (illuminant < other.illuminant || ((illuminant == other.illuminant) && (observer < other.observer)));
-    }
-
-    bool operator==(const IO& other) const
-    {
-        return illuminant == other.illuminant && observer == other.observer;
-    };
+    IO(){};
+    IO(std::string illuminant_, std::string observer_) ;
+    virtual ~IO(){};
+    bool operator<(const IO& other) const;
+    bool operator==(const IO& other) const;
 };
 
 const IO A_2("A", "2"), A_10("A", "10"),
@@ -83,25 +70,7 @@ const static std::map<IO, std::vector<double>> illuminants_xy =
 };
 
 std::vector<double> xyY2XYZ(const std::vector<double>& xyY);
-std::vector<double> xyY2XYZ(const std::vector<double>& xyY)
-{
-    double Y = xyY.size() >= 3 ? xyY[2] : 1;
-    return { Y * xyY[0] / xyY[1], Y, Y / xyY[1] * (1 - xyY[0] - xyY[1]) };
-}
 
-/* *\ brief function to get illuminants*/
-static std::map <IO, std::vector<double>> getIlluminant();
-static std::map <IO, std::vector<double>> getIlluminant()
-{
-    std::map <IO, std::vector<double>>  illuminants;
-    for (auto it = illuminants_xy.begin(); it != illuminants_xy.end(); ++it)
-    {
-        illuminants[it->first] = xyY2XYZ(it->second);
-    }
-    return illuminants;
-}
-
-const std::map<IO, std::vector<double> >  illuminants = getIlluminant();
 } // namespace ccm
 } // namespace cv
 
